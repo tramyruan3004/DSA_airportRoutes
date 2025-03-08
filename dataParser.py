@@ -54,6 +54,12 @@ class AirportGraph:
     
     def get_routes(self, iata):
         return self.graph.get(iata, [])
+
+    def get_distance(self, dep_code, dest_code):
+        for route in self.get_routes(dep_code):
+            if route["destination"] == dest_code:
+                return route["km"]
+        return float('inf')
     
     def get_airport_info(self, iata):
         return self.airport_info.get(iata, {})
