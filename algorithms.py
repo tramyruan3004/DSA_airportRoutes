@@ -1,88 +1,58 @@
-def find_direct_flights(graph, src, dest):
-    #"""Find direct flights between two airports."""
-    routes = graph.get_routes(src)
-    direct_flights = [route for route in routes if route["destination"] == dest]
-    return direct_flights
+from collections import deque
 
-def find_cheapest_flight(graph, src, dest):
-    #"""Find the cheapest flight between two airports."""
-    routes = graph.get_routes(src)
-    cheapest_flight = None
-    for route in routes:
-        if route["destination"] == dest:
-            if cheapest_flight is None or route["km"] < cheapest_flight["km"]:
-                cheapest_flight = route
-    if cheapest_flight:
-        return [(src, dest)]  # Return as a list of tuples (src, dest)
+CABIN_MULTIPLIERS = {
+    "Economy": 1.0,
+    "Premium Economy": 1.5,
+    "Business": 2.0,
+    "First": 2.5
+}
+
+def calculate_cost(distance, stops):
+    cost_per_km = 0.3
+    if stops == 0:
+        return distance * cost_per_km
+    elif stops == 1:
+        return distance * cost_per_km * 0.85
+    elif stops == 2:
+        return distance * cost_per_km * 0.75
     else:
-        return []
+        return distance * cost_per_km * 0.7
 
-def find_shortest_path(graph, src, dest):
-    #"""Find the shortest path between two airports using Dijkstra's algorithm."""
-    import heapq
+def find_one_way_flights(graph, departure, destination, stops=0, filter_type="cheapest", cabin="Economy"):
+    found_routes = []
+    # BFS queue: (current_airport, route_list, distance_so_far, time_so_far)
+    queue = deque()
+    queue.append((departure, [departure], 0, 0))
 
-    distances = {airport: float('inf') for airport in graph.graph}
-    distances[src] = 0
-    previous_nodes = {airport: None for airport in graph.graph}
-    pq = [(0, src)]
+    max_length = stops + 2  # e.g. stops=0 => route length=2
 
-    while pq:
-        current_distance, current_airport = heapq.heappop(pq)
+    while queue:
+        current_airport, route_list, dist_so_far, time_so_far = queue.popleft()
 
-        if current_airport == dest:
-            break
+        if len(route_list) == max_length:
+            if current_airport == destination:
+                stops_so_far = len(route_list) - 2  
+                base_cost = calculate_cost(dist_so_far, stops_so_far)
+                cabin_multiplier = CABIN_MULTIPLIERS.get(cabin, 1.0)
+                final_cost = base_cost * cabin_multiplier
+                found_routes.append((route_list, dist_so_far, time_so_far, final_cost, cabin))
+            continue
 
         for route in graph.get_routes(current_airport):
             neighbor = route["destination"]
-            distance = current_distance + route["km"]
-            if distance < distances[neighbor]:
-                distances[neighbor] = distance
-                previous_nodes[neighbor] = current_airport
-                heapq.heappush(pq, (distance, neighbor))
+            if neighbor in route_list:  
+                continue
+            new_dist = dist_so_far + route["km"]
+            new_time = time_so_far + route["min"]
+            new_route_list = route_list + [neighbor]
+            queue.append((neighbor, new_route_list, new_dist, new_time))
 
-    path = []
-    current_airport = dest
-    while previous_nodes[current_airport] is not None:
-        path.insert(0, current_airport)
-        current_airport = previous_nodes[current_airport]
-    if path:
-        path.insert(0, src)
-    return path
+    # Sort by cost or time
+    if filter_type == "cheapest":
+        # sort by final_cost => x[3]
+        found_routes.sort(key=lambda x: x[3])
+    else:
+        # fastest => sort by total_time => x[2]
+        found_routes.sort(key=lambda x: x[2])
 
-def recommend_flights(graph, src, dest, route_type="direct"):
-    # """Recommend flights based on the route type."""
-    if route_type == "direct":
-        direct_flights = find_direct_flights(graph, src, dest)
-        if direct_flights:
-            return [(src, dest)]  # Return as a list of tuples (src, dest)
-        else:
-            return []
-    elif route_type == "cheapest":
-        cheapest_flight = find_cheapest_flight(graph, src, dest)
-        if cheapest_flight:
-            return [(src, dest)]  # Return as a list of tuples (src, dest)
-        else:
-            return []
-    elif route_type == "shortest":
-        path = find_shortest_path(graph, src, dest)
-        if path:
-            return [path]  # Return the path as a list of airport codes
-        else:
-            return []
-    return []
-
-def find_multi_city_flights(graph, airports, route_type="direct"):
-    #"""Find multi-city flights or recommend alternatives based on the route type."""
-    if len(airports) < 2:
-        return []
-
-    all_flights = []
-    for i in range(len(airports) - 1):
-        src = airports[i]
-        dest = airports[i + 1]
-        flights = recommend_flights(graph, src, dest, route_type)
-        if not flights:
-            return []
-        all_flights.append(flights)
-
-    return all_flights
+    return found_routes
