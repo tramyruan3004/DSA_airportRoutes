@@ -31,12 +31,20 @@ valid_airport_coords = {
     if lat is not None and lon is not None
 }
 
+# Load currency data (with "name" field, but "symbol" = currency code)
+with open("dataset/currency.json", "r") as cf:
+    currency_data = json.load(cf)
+
+currency_rates = currency_data["rates"]  # e.g. { "SGD": {"symbol":"SGD","rate":1.0,"name":"Singapore Dollar"}, ... }
+
 class MapApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Flight Search Map")
 
-        self.control_font = font.Font(size=12)
+        # Use a Unicode-friendly font if you wish, e.g. "Noto Sans"
+        # But since we are using codes like "USD", "SGD", we can pick any common font
+        self.control_font = font.Font(family="Noto Sans", size=12)
         self.create_home_page()
 
     def create_home_page(self):
@@ -44,7 +52,6 @@ class MapApp:
         for widget in self.root.winfo_children():
             widget.destroy()
 
-        # Configure grid layout
         self.root.grid_columnconfigure(0, weight=2)
         self.root.grid_columnconfigure(1, weight=8)
         self.root.grid_rowconfigure(0, weight=1)
@@ -55,48 +62,59 @@ class MapApp:
         self.control_frame.grid_rowconfigure(0, weight=1)
 
         #
-        # -------------- TRIP TYPE --------------
+        # ===== CURRENCY COMBOBOX =====
+        #
+        tk.Label(self.control_frame, text="Currency:", font=self.control_font).pack(anchor='w', pady=5)
+        self.currency_var = tk.StringVar()
+
+        # Build a list like ["SGD - Singapore Dollar", "USD - United States Dollar", ...]
+        currency_list = [
+            f"{code} - {info['name']}"
+            for code, info in currency_rates.items()
+        ]
+        self.currency_combo = ttk.Combobox(self.control_frame, textvariable=self.currency_var,
+                                           values=currency_list, font=self.control_font)
+        self.currency_combo.pack(fill=tk.X, padx=5, pady=5)
+        # default to "SGD - Singapore Dollar"
+        self.currency_var.set("SGD - Singapore Dollar")
+
+        #
+        # ===== TRIP TYPE (ONE WAY / MULTI-CITY) =====
         #
         self.trip_type_var = tk.StringVar(value="one_way")
         tk.Label(self.control_frame, text="Trip Type:", font=self.control_font).pack(anchor='w', pady=5)
-
         tk.Radiobutton(
             self.control_frame, text="One Way", variable=self.trip_type_var,
             value="one_way", command=self.toggle_middle_airport,
             font=self.control_font
         ).pack(anchor='w')
-
         tk.Radiobutton(
             self.control_frame, text="Multi-City", variable=self.trip_type_var,
             value="multi_city", command=self.toggle_middle_airport,
             font=self.control_font
         ).pack(anchor='w')
 
-        #
-        # -------------- DEPARTURE AIRPORT --------------
-        #
+        # DEPARTURE
         tk.Label(self.control_frame, text="Departure Airport:", font=self.control_font).pack(anchor='w')
         self.departure_airport = ttk.Combobox(self.control_frame, font=self.control_font)
         self.departure_airport.pack(fill=tk.X, padx=5, pady=5)
+
+        # dynamic filtering
         self.departure_airport.bind("<KeyRelease>", lambda e: self.update_dropdown(self.departure_airport))
 
-        #
-        # -------------- MIDDLE AIRPORT --------------
-        #
+        # MIDDLE
         tk.Label(self.control_frame, text="Middle Airport:", font=self.control_font).pack(anchor='w')
         self.mid_airport = ttk.Combobox(self.control_frame, font=self.control_font, state="disabled")
         self.mid_airport.pack(fill=tk.X, padx=5, pady=5)
         self.mid_airport.bind("<KeyRelease>", lambda e: self.update_dropdown(self.mid_airport))
 
-        #
-        # -------------- DESTINATION AIRPORT --------------
-        #
+        # DESTINATION
         tk.Label(self.control_frame, text="Destination Airport:", font=self.control_font).pack(anchor='w')
         self.destination_airport = ttk.Combobox(self.control_frame, font=self.control_font)
         self.destination_airport.pack(fill=tk.X, padx=5, pady=5)
         self.destination_airport.bind("<KeyRelease>", lambda e: self.update_dropdown(self.destination_airport))
 
-        # Pre-fill with all valid airports
+        # Pre-fill combobox with valid airports
         full_list = [
             f"{iata} - {airport_data[iata]['name']}"
             for iata in valid_airport_coords
@@ -106,11 +124,10 @@ class MapApp:
         self.destination_airport["values"] = full_list
 
         #
-        # -------------- ROUTE TYPE --------------
+        # ===== ROUTE TYPE (direct, 1-stop, 2-stop) =====
         #
         self.route_type_frame = tk.LabelFrame(self.control_frame, text="Route Type", font=self.control_font, padx=5, pady=5)
         self.route_type_frame.pack(fill=tk.X, padx=5, pady=5)
-
         self.route_type_var = tk.StringVar(value="direct")
         tk.Radiobutton(self.route_type_frame, text="Direct (0 stops)", variable=self.route_type_var,
                        value="direct", font=self.control_font).pack(anchor='w')
@@ -120,11 +137,10 @@ class MapApp:
                        value="two_stop", font=self.control_font).pack(anchor='w')
 
         #
-        # -------------- FILTER (Cheapest / Fastest) --------------
+        # ===== FILTER (Cheapest / Fastest) =====
         #
         self.filter_frame = tk.LabelFrame(self.control_frame, text="Filter", font=self.control_font, padx=5, pady=5)
         self.filter_frame.pack(fill=tk.X, padx=5, pady=5)
-
         self.filter_var = tk.StringVar(value="cheapest")
         tk.Radiobutton(self.filter_frame, text="Cheapest Route", variable=self.filter_var,
                        value="cheapest", font=self.control_font).pack(anchor='w')
@@ -132,11 +148,10 @@ class MapApp:
                        value="fastest", font=self.control_font).pack(anchor='w')
 
         #
-        # -------------- CABIN --------------
+        # ===== CABIN =====
         #
         self.cabin_frame = tk.LabelFrame(self.control_frame, text="Cabin", font=self.control_font, padx=5, pady=5)
         self.cabin_frame.pack(fill=tk.X, padx=5, pady=5)
-
         self.cabin_var = tk.StringVar(value="Economy")
         tk.Radiobutton(self.cabin_frame, text="Economy", variable=self.cabin_var, value="Economy", font=self.control_font).pack(anchor='w')
         tk.Radiobutton(self.cabin_frame, text="Premium Economy", variable=self.cabin_var, value="Premium Economy", font=self.control_font).pack(anchor='w')
@@ -144,14 +159,14 @@ class MapApp:
         tk.Radiobutton(self.cabin_frame, text="First", variable=self.cabin_var, value="First", font=self.control_font).pack(anchor='w')
 
         #
-        # -------------- SEARCH BUTTON --------------
+        # ===== SEARCH BUTTON =====
         #
         self.search_button = tk.Button(
             self.control_frame, text="Search", command=self.on_search_clicked, font=self.control_font
         )
-        self.search_button.pack(pady=10)  # Clearly visible at the bottom
+        self.search_button.pack(pady=10)
 
-        # Right side: map and results
+        # Right side: map + results
         self.map_frame = tk.Frame(self.root)
         self.map_frame.grid(row=0, column=1, sticky="nsew")
 
@@ -177,10 +192,6 @@ class MapApp:
         self.draw_map()
 
     def toggle_middle_airport(self):
-        """
-        If user selects 'one_way', disable the middle airport combobox.
-        If user selects 'multi_city', enable it.
-        """
         if self.trip_type_var.get() == "multi_city":
             self.mid_airport["state"] = "normal"
         else:
@@ -188,12 +199,10 @@ class MapApp:
 
     def update_dropdown(self, combobox):
         typed_text = combobox.get().strip().upper()
-
         full_list = [
             f"{iata} - {airport_data[iata]['name']}"
             for iata in valid_airport_coords
         ]
-
         if typed_text:
             filtered = [
                 item for item in full_list
@@ -205,7 +214,6 @@ class MapApp:
         combobox["values"] = filtered
 
     def on_search_clicked(self):
-        # The method that triggers the BFS / multi-city logic
         self.update_map()
 
     def draw_map(self, route=None):
@@ -234,7 +242,6 @@ class MapApp:
         cursor = mplcursors.cursor(scatter, hover=True)
         cursor.connect("add", lambda sel: sel.annotation.set_text(labels[sel.index]))
 
-        # If a route is provided, highlight it
         if route:
             route_lons = []
             route_lats = []
@@ -253,11 +260,9 @@ class MapApp:
         self.canvas.draw()
 
     def update_map(self):
-        # Clear old results from the result scrollable frame
         for widget in self.result_scrollable_frame.winfo_children():
             widget.destroy()
 
-        # Retrieve user selections
         trip_type = self.trip_type_var.get()  # "one_way" or "multi_city"
         dep_raw = self.departure_airport.get().split(" - ")
         mid_raw = self.mid_airport.get().split(" - ")
@@ -275,7 +280,7 @@ class MapApp:
         departure = dep_raw[0]
         destination = dest_raw[0]
 
-        # Route type => direct=0, one_stop=1, two_stop=2
+        # route type => direct=0, one_stop=1, two_stop=2
         route_type = self.route_type_var.get()
         if route_type == "direct":
             stops = 0
@@ -284,15 +289,13 @@ class MapApp:
         else:
             stops = 2
 
-        # Filter => cheapest or fastest
         filter_choice = self.filter_var.get()
-
-        # Cabin => economy/premium/business/first
         cabin_choice = self.cabin_var.get()
 
-        # If one_way => BFS from departure->destination
+        # Parse the currency code from "SGD - Singapore Dollar"
+        cur_selection = self.currency_var.get().split(" - ")[0]  # e.g. "USD"
+
         if trip_type == "one_way":
-            # Example BFS call
             routes = algorithms.find_one_way_flights(
                 graph=airport_graph,
                 departure=departure,
@@ -301,16 +304,14 @@ class MapApp:
                 filter_type=filter_choice,
                 cabin=cabin_choice
             )
-            self.display_routes(routes)
+            self.display_routes(routes, cur_selection)
         else:
-            # multi_city => departure->middle->destination
             if len(mid_raw) < 2:
                 self.show_message("Invalid Middle Airport.")
                 self.draw_map()
                 return
             middle = mid_raw[0]
 
-            # BFS for departure->middle
             routes_dep_mid = algorithms.find_one_way_flights(
                 graph=airport_graph,
                 departure=departure,
@@ -319,7 +320,6 @@ class MapApp:
                 filter_type=filter_choice,
                 cabin=cabin_choice
             )
-            # BFS for middle->destination
             routes_mid_dest = algorithms.find_one_way_flights(
                 graph=airport_graph,
                 departure=middle,
@@ -329,40 +329,43 @@ class MapApp:
                 cabin=cabin_choice
             )
 
-            # Merge routes (simple approach)
             merged_routes = []
-            for (r1, dist1, time1, cost1, c1) in routes_dep_mid:
-                for (r2, dist2, time2, cost2, c2) in routes_mid_dest:
-                    combined_path = r1[:-1] + r2  # remove the duplicate 'middle'
-                    total_dist = dist1 + dist2
-                    total_time = time1 + time2
-                    total_cost = cost1 + cost2
+            for (r1, d1, t1, c1, cab1) in routes_dep_mid:
+                for (r2, d2, t2, c2, cab2) in routes_mid_dest:
+                    combined_path = r1[:-1] + r2
+                    total_dist = d1 + d2
+                    total_time = t1 + t2
+                    total_cost = c1 + c2
                     merged_routes.append((combined_path, total_dist, total_time, total_cost, cabin_choice))
 
-            # Sort by cost or time
             if filter_choice == "cheapest":
                 merged_routes.sort(key=lambda x: x[3])
             else:
                 merged_routes.sort(key=lambda x: x[2])
 
-            self.display_routes(merged_routes)
+            self.display_routes(merged_routes, cur_selection)
 
     def show_message(self, msg):
         tk.Label(self.result_scrollable_frame, text=msg, font=self.control_font).pack(fill=tk.X, padx=5, pady=2)
 
-    def display_routes(self, routes):
+    def display_routes(self, routes, currency_code):
         if not routes:
             self.show_message("No flights found.")
             self.draw_map()
             return
 
-        # Show the first route on the map
         first_route = routes[0][0]
         self.draw_map(route=first_route)
 
-        # Display each route
-        for (routelist, dist, timing, cost, cabin) in routes:
-            # Build multiline text
+        # Retrieve the currency's "symbol" (which is actually code) & rate
+        if currency_code not in currency_rates:
+            currency_code = "SGD"
+        code_string = currency_rates[currency_code]["symbol"]  # e.g. "USD"
+        rate = currency_rates[currency_code]["rate"]
+
+        for (routelist, dist, timing, cost_sgd, cabin) in routes:
+            cost_converted = cost_sgd * rate
+
             segments = []
             for airport in routelist:
                 airport_name = airport_data[airport]["name"]
@@ -373,7 +376,7 @@ class MapApp:
                 f"{route_line}\n"
                 f"  Total Distance: {dist} km\n"
                 f"  Total Timing: {timing} min\n"
-                f"  Price: ${cost:.2f} ({cabin})"
+                f"  Price: {code_string}{cost_converted:.2f} ({cabin})"
             )
 
             btn = tk.Button(
