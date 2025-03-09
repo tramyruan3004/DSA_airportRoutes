@@ -146,10 +146,10 @@ class MapApp:
     def draw_map(self, plot_airports=False, route=None):
         if hasattr(self, 'canvas'):
             self.canvas.get_tk_widget().destroy()
-        
+
         fig, ax = plt.subplots(figsize=(8, 6), subplot_kw={'projection': ccrs.PlateCarree()})
         ax.set_global()
-        
+
         ax.add_feature(cfeature.OCEAN)
         ax.add_feature(cfeature.LAND)
         ax.add_feature(cfeature.COASTLINE, linewidth=0.5)
@@ -157,34 +157,42 @@ class MapApp:
         ax.add_feature(cfeature.LAKES, alpha=0.5)
         ax.add_feature(cfeature.RIVERS)
         ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
-        
+
         lons, lats, labels = [], [], []
         for iata, (lat, lon) in valid_airport_coords.items():
             lons.append(lon)
             lats.append(lat)
             labels.append(f"{iata} - {airport_data[iata]['name']}, {airport_data[iata]['country']}")
-        
-        scatter = ax.scatter(lons, lats, color='#f8f3c1', s=2, transform=ccrs.PlateCarree(), label="Airports") 
-        
+
+        scatter = ax.scatter(lons, lats, color='#f8f3c1', s=2, transform=ccrs.PlateCarree(), label="Airports")
+
         cursor = mplcursors.cursor(scatter, hover=True)
         cursor.connect("add", lambda sel: sel.annotation.set_text(labels[sel.index]))
-        
+
         if plot_airports:
             selected_airports = [self.departure_airport.get().split(" - ")[0], self.destination_airport.get().split(" - ")[0]]
             if self.trip_type.get() == "multi_city" and self.mid_airport.get():
                 selected_airports.insert(1, self.mid_airport.get().split(" - ")[0])
-            
+
             for airport in selected_airports:
                 if airport in valid_airport_coords:
                     lat, lon = valid_airport_coords[airport]
                     ax.scatter(lon, lat, color='red', s=100, transform=ccrs.PlateCarree(), label=airport)
                     ax.text(lon + 2, lat, airport, transform=ccrs.PlateCarree(), fontsize=10, color='black')
-        
+
         if route:
+            # Highlight all nodes (airports) in the route
+            for airport in route:
+                if airport in valid_airport_coords:
+                    lat, lon = valid_airport_coords[airport]
+                    ax.scatter(lon, lat, color='red', s=100, transform=ccrs.PlateCarree(), label=airport)
+                    ax.text(lon + 2, lat, airport, transform=ccrs.PlateCarree(), fontsize=10, color='black')
+
+            # Draw the route lines
             route_lons = [valid_airport_coords[airport][1] for airport in route]
             route_lats = [valid_airport_coords[airport][0] for airport in route]
             ax.plot(route_lons, route_lats, color='blue', linewidth=2, transform=ccrs.PlateCarree(), label="Route")
-        
+
         self.canvas = FigureCanvasTkAgg(fig, master=self.map_frame)
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         self.canvas.draw()
