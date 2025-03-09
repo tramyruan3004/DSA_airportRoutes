@@ -57,6 +57,36 @@ class AirportGraph:
     
     def get_airport_info(self, iata):
         return self.airport_info.get(iata, {})
+
+    def get_neighboring_airports(self, iata, max_distance=500):
+        # Get neighboring airports within a certain distance (in km) and in the same country.
+        src_info = self.get_airport_info(iata)
+        if not src_info:
+            return []  # Source airport not found
+
+        src_lat = src_info["latitude"]
+        src_lon = src_info["longitude"]
+        src_country_code = src_info["country_code"]
+        neighbors = []
+
+        for airport, info in self.airport_info.items():
+            if airport == iata:
+                continue  # Skip the source airport itself
+
+            # Check if the airport is in the same country
+            if info["country_code"] != src_country_code:
+                continue
+
+            # Calculate distance
+            dest_lat = info["latitude"]
+            dest_lon = info["longitude"]
+            distance = self.calculate_distance(src_lat, src_lon, dest_lat, dest_lon)
+
+            # Add to neighbors if within max_distance
+            if distance <= max_distance:
+                neighbors.append(airport)
+
+        return neighbors
     
     def display_graph(self):
         for airport, routes in self.graph.items():
