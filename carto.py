@@ -40,52 +40,63 @@ class MapApp:
         self.create_home_page()
 
     def create_home_page(self):
-        # Clear existing
+        # Clear existing UI
         for widget in self.root.winfo_children():
             widget.destroy()
 
-        # Grid config
+        # Configure grid layout
         self.root.grid_columnconfigure(0, weight=2)
         self.root.grid_columnconfigure(1, weight=8)
         self.root.grid_rowconfigure(0, weight=1)
 
+        # Left control panel
         self.control_frame = tk.Frame(self.root, bg="#f0f0f0")
         self.control_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
         self.control_frame.grid_rowconfigure(0, weight=1)
 
-        # ---------------- TRIP TYPE ----------------
+        #
+        # -------------- TRIP TYPE --------------
+        #
         self.trip_type_var = tk.StringVar(value="one_way")
         tk.Label(self.control_frame, text="Trip Type:", font=self.control_font).pack(anchor='w', pady=5)
+
         tk.Radiobutton(
             self.control_frame, text="One Way", variable=self.trip_type_var,
             value="one_way", command=self.toggle_middle_airport,
             font=self.control_font
         ).pack(anchor='w')
+
         tk.Radiobutton(
             self.control_frame, text="Multi-City", variable=self.trip_type_var,
             value="multi_city", command=self.toggle_middle_airport,
             font=self.control_font
         ).pack(anchor='w')
 
-        # --------------- DEPARTURE AIRPORT ---------------
+        #
+        # -------------- DEPARTURE AIRPORT --------------
+        #
         tk.Label(self.control_frame, text="Departure Airport:", font=self.control_font).pack(anchor='w')
         self.departure_airport = ttk.Combobox(self.control_frame, font=self.control_font)
         self.departure_airport.pack(fill=tk.X, padx=5, pady=5)
         self.departure_airport.bind("<KeyRelease>", lambda e: self.update_dropdown(self.departure_airport))
 
-        # --------------- MIDDLE AIRPORT ---------------
+        #
+        # -------------- MIDDLE AIRPORT --------------
+        #
         tk.Label(self.control_frame, text="Middle Airport:", font=self.control_font).pack(anchor='w')
         self.mid_airport = ttk.Combobox(self.control_frame, font=self.control_font, state="disabled")
         self.mid_airport.pack(fill=tk.X, padx=5, pady=5)
         self.mid_airport.bind("<KeyRelease>", lambda e: self.update_dropdown(self.mid_airport))
 
-        # -------------- DESTINATION AIRPORT -------------
+        #
+        # -------------- DESTINATION AIRPORT --------------
+        #
         tk.Label(self.control_frame, text="Destination Airport:", font=self.control_font).pack(anchor='w')
         self.destination_airport = ttk.Combobox(self.control_frame, font=self.control_font)
         self.destination_airport.pack(fill=tk.X, padx=5, pady=5)
         self.destination_airport.bind("<KeyRelease>", lambda e: self.update_dropdown(self.destination_airport))
 
-        # Pre-fill combobox with all valid airports
+        # Pre-fill with all valid airports
         full_list = [
             f"{iata} - {airport_data[iata]['name']}"
             for iata in valid_airport_coords
@@ -94,9 +105,12 @@ class MapApp:
         self.mid_airport["values"] = full_list
         self.destination_airport["values"] = full_list
 
-        # -------------- ROUTE TYPE (direct, 1-stop, 2-stop) -------------
+        #
+        # -------------- ROUTE TYPE --------------
+        #
         self.route_type_frame = tk.LabelFrame(self.control_frame, text="Route Type", font=self.control_font, padx=5, pady=5)
         self.route_type_frame.pack(fill=tk.X, padx=5, pady=5)
+
         self.route_type_var = tk.StringVar(value="direct")
         tk.Radiobutton(self.route_type_frame, text="Direct (0 stops)", variable=self.route_type_var,
                        value="direct", font=self.control_font).pack(anchor='w')
@@ -105,33 +119,42 @@ class MapApp:
         tk.Radiobutton(self.route_type_frame, text="2-stop flight", variable=self.route_type_var,
                        value="two_stop", font=self.control_font).pack(anchor='w')
 
-        # -------------- FILTER (Cheapest / Fastest) -------------
+        #
+        # -------------- FILTER (Cheapest / Fastest) --------------
+        #
         self.filter_frame = tk.LabelFrame(self.control_frame, text="Filter", font=self.control_font, padx=5, pady=5)
         self.filter_frame.pack(fill=tk.X, padx=5, pady=5)
+
         self.filter_var = tk.StringVar(value="cheapest")
         tk.Radiobutton(self.filter_frame, text="Cheapest Route", variable=self.filter_var,
                        value="cheapest", font=self.control_font).pack(anchor='w')
         tk.Radiobutton(self.filter_frame, text="Fastest Route", variable=self.filter_var,
                        value="fastest", font=self.control_font).pack(anchor='w')
 
-        # -------------- CABIN -------------
+        #
+        # -------------- CABIN --------------
+        #
         self.cabin_frame = tk.LabelFrame(self.control_frame, text="Cabin", font=self.control_font, padx=5, pady=5)
         self.cabin_frame.pack(fill=tk.X, padx=5, pady=5)
+
         self.cabin_var = tk.StringVar(value="Economy")
         tk.Radiobutton(self.cabin_frame, text="Economy", variable=self.cabin_var, value="Economy", font=self.control_font).pack(anchor='w')
         tk.Radiobutton(self.cabin_frame, text="Premium Economy", variable=self.cabin_var, value="Premium Economy", font=self.control_font).pack(anchor='w')
         tk.Radiobutton(self.cabin_frame, text="Business", variable=self.cabin_var, value="Business", font=self.control_font).pack(anchor='w')
         tk.Radiobutton(self.cabin_frame, text="First", variable=self.cabin_var, value="First", font=self.control_font).pack(anchor='w')
 
-        # -------------- SEARCH BUTTON -------------
-        self.search_button = tk.Button(self.control_frame, text="Search", command=self.on_search_clicked, font=self.control_font)
-        self.search_button.pack(pady=10)
+        #
+        # -------------- SEARCH BUTTON --------------
+        #
+        self.search_button = tk.Button(
+            self.control_frame, text="Search", command=self.on_search_clicked, font=self.control_font
+        )
+        self.search_button.pack(pady=10)  # Clearly visible at the bottom
 
-        # Map frame
+        # Right side: map and results
         self.map_frame = tk.Frame(self.root)
         self.map_frame.grid(row=0, column=1, sticky="nsew")
 
-        # Result frame
         self.result_frame = tk.Frame(self.root)
         self.result_frame.grid(row=1, column=1, sticky="nsew")
 
@@ -182,6 +205,7 @@ class MapApp:
         combobox["values"] = filtered
 
     def on_search_clicked(self):
+        # The method that triggers the BFS / multi-city logic
         self.update_map()
 
     def draw_map(self, route=None):
@@ -229,19 +253,16 @@ class MapApp:
         self.canvas.draw()
 
     def update_map(self):
-        # Clear old results
+        # Clear old results from the result scrollable frame
         for widget in self.result_scrollable_frame.winfo_children():
             widget.destroy()
 
-        # 1) Check trip type
+        # Retrieve user selections
         trip_type = self.trip_type_var.get()  # "one_way" or "multi_city"
-
-        # 2) Gather combobox selections
         dep_raw = self.departure_airport.get().split(" - ")
         mid_raw = self.mid_airport.get().split(" - ")
         dest_raw = self.destination_airport.get().split(" - ")
 
-        # Validate minimal
         if len(dep_raw) < 2:
             self.show_message("Invalid Departure Airport.")
             self.draw_map()
@@ -269,13 +290,9 @@ class MapApp:
         # Cabin => economy/premium/business/first
         cabin_choice = self.cabin_var.get()
 
-        # 3) If one_way => just BFS from departure->destination
+        # If one_way => BFS from departure->destination
         if trip_type == "one_way":
-            if departure not in valid_airport_coords or destination not in valid_airport_coords:
-                self.show_message("Invalid airport selection.")
-                self.draw_map()
-                return
-
+            # Example BFS call
             routes = algorithms.find_one_way_flights(
                 graph=airport_graph,
                 departure=departure,
@@ -286,7 +303,7 @@ class MapApp:
             )
             self.display_routes(routes)
         else:
-            # multi_city => departure -> mid -> destination
+            # multi_city => departure->middle->destination
             if len(mid_raw) < 2:
                 self.show_message("Invalid Middle Airport.")
                 self.draw_map()
@@ -312,26 +329,21 @@ class MapApp:
                 cabin=cabin_choice
             )
 
-            # A simple approach: Combine each route from dep->mid with each route from mid->dest
-            # Merging them. You can refine if needed
+            # Merge routes (simple approach)
             merged_routes = []
             for (r1, dist1, time1, cost1, c1) in routes_dep_mid:
                 for (r2, dist2, time2, cost2, c2) in routes_mid_dest:
-                    # Combine the path, but remove the duplicate "middle" airport in r2
-                    # e.g. if r1= [dep, mid], r2=[mid, dest], final= [dep, mid, dest]
-                    combined_path = r1[:-1] + r2
+                    combined_path = r1[:-1] + r2  # remove the duplicate 'middle'
                     total_dist = dist1 + dist2
                     total_time = time1 + time2
-                    # For cost, you can sum cost1 + cost2 or recalc. We'll just sum
                     total_cost = cost1 + cost2
-                    # Cabin is the same for both BFS
                     merged_routes.append((combined_path, total_dist, total_time, total_cost, cabin_choice))
 
             # Sort by cost or time
             if filter_choice == "cheapest":
-                merged_routes.sort(key=lambda x: x[3])  # cost
+                merged_routes.sort(key=lambda x: x[3])
             else:
-                merged_routes.sort(key=lambda x: x[2])  # time
+                merged_routes.sort(key=lambda x: x[2])
 
             self.display_routes(merged_routes)
 
@@ -344,8 +356,8 @@ class MapApp:
             self.draw_map()
             return
 
-        # Show top 1 on map
-        first_route = routes[0][0]  # route_list
+        # Show the first route on the map
+        first_route = routes[0][0]
         self.draw_map(route=first_route)
 
         # Display each route
