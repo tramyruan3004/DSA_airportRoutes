@@ -37,6 +37,7 @@ with open("dataset/currency.json", "r") as cf:
 
 currency_rates = currency_data["rates"]  # e.g. { "SGD": {"symbol":"SGD","rate":1.0,"name":"Singapore Dollar"}, ... }
 
+
 class MapApp:
     def __init__(self, root):
         self.root = root
@@ -44,6 +45,7 @@ class MapApp:
 
         # Use a Unicode-friendly font if you wish, e.g. "Noto Sans"
         # But since we are using codes like "USD", "SGD", we can pick any common font
+        self.root.configure(bg="#1A1A2E")
         self.control_font = font.Font(family="Noto Sans", size=12)
         self.create_home_page()
 
@@ -57,21 +59,18 @@ class MapApp:
         self.root.grid_rowconfigure(0, weight=1)
 
         # Left control panel
-        self.control_frame = tk.Frame(self.root, bg="#f0f0f0")
-        self.control_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+        self.control_frame = tk.Frame(self.root, bg="#16213E")
+        self.control_frame.grid(row=0, column=0, sticky="nsew", padx=15, pady=15)
         self.control_frame.grid_rowconfigure(0, weight=1)
 
         #
         # ===== CURRENCY COMBOBOX =====
         #
-        tk.Label(self.control_frame, text="Currency:", font=self.control_font).pack(anchor='w', pady=5)
+        tk.Label(self.control_frame, text="Currency:", font=self.control_font, bg="#16213E", fg="white").pack(anchor='w', pady=5)
         self.currency_var = tk.StringVar()
 
         # Build a list like ["SGD - Singapore Dollar", "USD - United States Dollar", ...]
-        currency_list = [
-            f"{code} - {info['name']}"
-            for code, info in currency_rates.items()
-        ]
+        currency_list = [f"{code} - {info['name']}" for code, info in currency_rates.items()]
         self.currency_combo = ttk.Combobox(self.control_frame, textvariable=self.currency_var,
                                            values=currency_list, font=self.control_font)
         self.currency_combo.pack(fill=tk.X, padx=5, pady=5)
@@ -81,21 +80,15 @@ class MapApp:
         #
         # ===== TRIP TYPE (ONE WAY / MULTI-CITY) =====
         #
+        tk.Label(self.control_frame, text="Trip Type:", font=self.control_font, bg="#16213E", fg="white").pack(anchor='w', pady=5)
         self.trip_type_var = tk.StringVar(value="one_way")
-        tk.Label(self.control_frame, text="Trip Type:", font=self.control_font).pack(anchor='w', pady=5)
-        tk.Radiobutton(
-            self.control_frame, text="One Way", variable=self.trip_type_var,
-            value="one_way", command=self.toggle_middle_airport,
-            font=self.control_font
-        ).pack(anchor='w')
-        tk.Radiobutton(
-            self.control_frame, text="Multi-City", variable=self.trip_type_var,
-            value="multi_city", command=self.toggle_middle_airport,
-            font=self.control_font
-        ).pack(anchor='w')
+        tk.Radiobutton(self.control_frame, text="One Way", variable=self.trip_type_var, value="one_way", command=self.toggle_middle_airport,
+                       font=self.control_font, bg="#16213E", fg="white", activebackground="#1A1A2E").pack(anchor='w')
+        tk.Radiobutton(self.control_frame, text="Multi-City", variable=self.trip_type_var, value="multi_city", command=self.toggle_middle_airport,
+                       font=self.control_font, bg="#16213E", fg="white", activebackground="#1A1A2E").pack(anchor='w')
 
         # DEPARTURE
-        tk.Label(self.control_frame, text="Departure Airport:", font=self.control_font).pack(anchor='w')
+        tk.Label(self.control_frame, text="Departure Airport:", font=self.control_font,bg="#16213E", fg="white").pack(anchor='w')
         self.departure_airport = ttk.Combobox(self.control_frame, font=self.control_font)
         self.departure_airport.pack(fill=tk.X, padx=5, pady=5)
 
@@ -103,13 +96,13 @@ class MapApp:
         self.departure_airport.bind("<KeyRelease>", lambda e: self.update_dropdown(self.departure_airport))
 
         # MIDDLE
-        tk.Label(self.control_frame, text="Middle Airport:", font=self.control_font).pack(anchor='w')
+        tk.Label(self.control_frame, text="Middle Airport:", font=self.control_font, bg="#16213E", fg="white").pack(anchor='w')
         self.mid_airport = ttk.Combobox(self.control_frame, font=self.control_font, state="disabled")
         self.mid_airport.pack(fill=tk.X, padx=5, pady=5)
         self.mid_airport.bind("<KeyRelease>", lambda e: self.update_dropdown(self.mid_airport))
 
         # DESTINATION
-        tk.Label(self.control_frame, text="Destination Airport:", font=self.control_font).pack(anchor='w')
+        tk.Label(self.control_frame, text="Destination Airport:", font=self.control_font, bg="#16213E", fg="white").pack(anchor='w')
         self.destination_airport = ttk.Combobox(self.control_frame, font=self.control_font)
         self.destination_airport.pack(fill=tk.X, padx=5, pady=5)
         self.destination_airport.bind("<KeyRelease>", lambda e: self.update_dropdown(self.destination_airport))
@@ -126,57 +119,69 @@ class MapApp:
         #
         # ===== ROUTE TYPE (direct, 1-stop, 2-stop) =====
         #
-        self.route_type_frame = tk.LabelFrame(self.control_frame, text="Route Type", font=self.control_font, padx=5, pady=5)
+        self.route_type_frame = tk.LabelFrame(self.control_frame, text="Route Type", font=self.control_font,
+                                              bg="#16213E", fg="white", padx=5, pady=5)
         self.route_type_frame.pack(fill=tk.X, padx=5, pady=5)
-        self.route_type_var = tk.StringVar(value="direct")
-        tk.Radiobutton(self.route_type_frame, text="Direct (0 stops)", variable=self.route_type_var,
-                       value="direct", font=self.control_font).pack(anchor='w')
-        tk.Radiobutton(self.route_type_frame, text="1-stop flight", variable=self.route_type_var,
-                       value="one_stop", font=self.control_font).pack(anchor='w')
-        tk.Radiobutton(self.route_type_frame, text="2-stop flight", variable=self.route_type_var,
-                       value="two_stop", font=self.control_font).pack(anchor='w')
+        self.direct_button = tk.Button(self.route_type_frame, text="Direct (0 stops)",
+                                       font=self.control_font, command=lambda: self.filter_routes("direct"),
+                                       bg="#E94560", fg="white", activebackground="#F76C6C")
+        self.direct_button.pack(fill=tk.X, padx=5, pady=2)
+        self.one_stop_button = tk.Button(self.route_type_frame, text="1-stop flight",
+                                         font=self.control_font, command=lambda: self.filter_routes("one_stop"),
+                                         bg="#E94560", fg="white", activebackground="#F76C6C")
+        self.one_stop_button.pack(fill=tk.X, padx=5, pady=2)
+        self.two_stop_button = tk.Button(self.route_type_frame, text="2-stop flight",
+                                         font=self.control_font, command=lambda: self.filter_routes("two_stop"),
+                                         bg="#E94560", fg="white", activebackground="#F76C6C")
+        self.two_stop_button.pack(fill=tk.X, padx=5, pady=2)
 
         #
         # ===== FILTER (Cheapest / Fastest) =====
         #
-        self.filter_frame = tk.LabelFrame(self.control_frame, text="Filter", font=self.control_font, padx=5, pady=5)
+        self.filter_frame = tk.LabelFrame(self.control_frame, text="Filter", font=self.control_font,
+                                          bg="#16213E", fg="white", padx=5, pady=5)
         self.filter_frame.pack(fill=tk.X, padx=5, pady=5)
         self.filter_var = tk.StringVar(value="cheapest")
         tk.Radiobutton(self.filter_frame, text="Cheapest Route", variable=self.filter_var,
-                       value="cheapest", font=self.control_font).pack(anchor='w')
+                       value="cheapest", font=self.control_font, bg="#16213E", fg="white",
+                       activebackground="#1A1A2E").pack(anchor='w')
         tk.Radiobutton(self.filter_frame, text="Fastest Route", variable=self.filter_var,
-                       value="fastest", font=self.control_font).pack(anchor='w')
+                       value="fastest", font=self.control_font, bg="#16213E", fg="white",
+                       activebackground="#1A1A2E").pack(anchor='w')
 
         #
         # ===== CABIN =====
         #
-        self.cabin_frame = tk.LabelFrame(self.control_frame, text="Cabin", font=self.control_font, padx=5, pady=5)
+        self.cabin_frame = tk.LabelFrame(self.control_frame, text="Cabin", font=self.control_font,
+                                         bg="#16213E", fg="white", padx=5, pady=5)
         self.cabin_frame.pack(fill=tk.X, padx=5, pady=5)
         self.cabin_var = tk.StringVar(value="Economy")
-        tk.Radiobutton(self.cabin_frame, text="Economy", variable=self.cabin_var, value="Economy", font=self.control_font).pack(anchor='w')
-        tk.Radiobutton(self.cabin_frame, text="Premium Economy", variable=self.cabin_var, value="Premium Economy", font=self.control_font).pack(anchor='w')
-        tk.Radiobutton(self.cabin_frame, text="Business", variable=self.cabin_var, value="Business", font=self.control_font).pack(anchor='w')
-        tk.Radiobutton(self.cabin_frame, text="First", variable=self.cabin_var, value="First", font=self.control_font).pack(anchor='w')
+        tk.Radiobutton(self.cabin_frame, text="Economy", variable=self.cabin_var, value="Economy",
+                       font=self.control_font, bg="#16213E", fg="white", activebackground="#1A1A2E").pack(anchor='w')
+        tk.Radiobutton(self.cabin_frame, text="Premium Economy", variable=self.cabin_var, value="Premium Economy",
+                       font=self.control_font, bg="#16213E", fg="white", activebackground="#1A1A2E").pack(anchor='w')
+        tk.Radiobutton(self.cabin_frame, text="Business", variable=self.cabin_var, value="Business",
+                       font=self.control_font, bg="#16213E", fg="white", activebackground="#1A1A2E").pack(anchor='w')
+        tk.Radiobutton(self.cabin_frame, text="First", variable=self.cabin_var, value="First",
+                       font=self.control_font, bg="#16213E", fg="white", activebackground="#1A1A2E").pack(anchor='w')
 
         #
         # ===== SEARCH BUTTON =====
         #
-        self.search_button = tk.Button(
-            self.control_frame, text="Search", command=self.on_search_clicked, font=self.control_font
-        )
+        self.search_button = tk.Button(self.control_frame, text="Search", command=self.on_search_clicked,
+                                       font=self.control_font, bg="#0F3460", fg="white", activebackground="#1A1A2E")
         self.search_button.pack(pady=10)
 
         # Right side: map + results
-        self.map_frame = tk.Frame(self.root)
+        self.map_frame = tk.Frame(self.root, bg="#1A1A2E")
         self.map_frame.grid(row=0, column=1, sticky="nsew")
-
-        self.result_frame = tk.Frame(self.root)
+        self.result_frame = tk.Frame(self.root, bg="#1A1A2E")
         self.result_frame.grid(row=1, column=1, sticky="nsew")
 
         # Scrollable result
-        self.result_canvas = tk.Canvas(self.result_frame, bg="white")
+        self.result_canvas = tk.Canvas(self.result_frame, bg="#1A1A2E")
         self.result_scrollbar = ttk.Scrollbar(self.result_frame, orient="vertical", command=self.result_canvas.yview)
-        self.result_scrollable_frame = tk.Frame(self.result_canvas)
+        self.result_scrollable_frame = tk.Frame(self.result_canvas, bg="#1A1A2E")
 
         self.result_scrollable_frame.bind(
             "<Configure>",
@@ -219,6 +224,7 @@ class MapApp:
     def draw_map(self, route=None):
         if hasattr(self, 'canvas'):
             self.canvas.get_tk_widget().destroy()
+            plt.close('all')
 
         fig, ax = plt.subplots(figsize=(8, 6), subplot_kw={'projection': ccrs.PlateCarree()})
         ax.set_global()
@@ -280,31 +286,52 @@ class MapApp:
         departure = dep_raw[0]
         destination = dest_raw[0]
 
-        # route type => direct=0, one_stop=1, two_stop=2
-        route_type = self.route_type_var.get()
-        if route_type == "direct":
-            stops = 0
-        elif route_type == "one_stop":
-            stops = 1
-        else:
-            stops = 2
-
         filter_choice = self.filter_var.get()
         cabin_choice = self.cabin_var.get()
 
         # Parse the currency code from "SGD - Singapore Dollar"
         cur_selection = self.currency_var.get().split(" - ")[0]  # e.g. "USD"
 
+        # Handle One-Way Trip Search
         if trip_type == "one_way":
-            routes = algorithms.find_one_way_flights(
-                graph=airport_graph,
-                departure=departure,
-                destination=destination,
-                stops=stops,
-                filter_type=filter_choice,
-                cabin=cabin_choice
+            # Search for ALL routes (direct, 1-stop, and 2-stop)
+            all_routes = (
+                    algorithms.find_one_way_flights(airport_graph, departure, destination, stops=0,
+                                                    filter_type=filter_choice, cabin=cabin_choice) +
+                    algorithms.find_one_way_flights(airport_graph, departure, destination, stops=1,
+                                                    filter_type=filter_choice, cabin=cabin_choice) +
+                    algorithms.find_one_way_flights(airport_graph, departure, destination, stops=2,
+                                                    filter_type=filter_choice, cabin=cabin_choice)
             )
-            self.display_routes(routes, cur_selection)
+
+            # Assign results for filtering here
+            self.all_routes = all_routes
+            print("all_routes data structure:", self.all_routes)
+
+            # If no routes found, attempt recommended neighboring airports
+            if not all_routes:
+                self.show_message("No available flights found.")
+                recommended_routes = algorithms.assign_neighbour(airport_graph, departure, destination)
+
+                if recommended_routes:
+                    self.show_message("Recommended neighboring routes:")
+                    for neighbour, distance, price in recommended_routes:
+                        if neighbour in airport_data:
+                            airport_name = airport_data[neighbour]['name']
+                            self.show_message(
+                                f"{neighbour} ({airport_name}) - Distance: {distance} km | Price: ${price:.2f}"
+                            )
+                    self.draw_map()
+                    return
+                else:
+                    self.show_message("No recommended neighboring airports found.")
+                    self.draw_map()
+                    return
+
+            # Display all available routes by default
+            self.display_routes(all_routes, cur_selection)
+
+        # Multi-City Logic (Unchanged)
         else:
             if len(mid_raw) < 2:
                 self.show_message("Invalid Middle Airport.")
@@ -316,7 +343,7 @@ class MapApp:
                 graph=airport_graph,
                 departure=departure,
                 destination=middle,
-                stops=stops,
+                stops=0,
                 filter_type=filter_choice,
                 cabin=cabin_choice
             )
@@ -324,7 +351,7 @@ class MapApp:
                 graph=airport_graph,
                 departure=middle,
                 destination=destination,
-                stops=stops,
+                stops=0,
                 filter_type=filter_choice,
                 cabin=cabin_choice
             )
@@ -345,17 +372,57 @@ class MapApp:
 
             self.display_routes(merged_routes, cur_selection)
 
+    def filter_routes(self, filter_type):
+        if not hasattr(self, 'all_routes') or not self.all_routes:
+            self.show_message("Please search for a flight first.")
+            return
+
+        # Filtering Logic (Based on Stops)
+        filtered_routes = []
+        for route in self.all_routes:
+            if isinstance(route[0], list):
+                num_stops = len(route[0]) - 2  # Stops = Total airports - 2
+                if (filter_type == "direct" and num_stops == 0) or \
+                    (filter_type == "one_stop" and num_stops == 1) or \
+                    (filter_type == "two_stop" and num_stops == 2):
+                    filtered_routes.append(route)
+
+        print("Filtered routes:", filtered_routes)  # Debug print
+
+        # Map filter type to a user-friendly label
+        filter_labels = {
+            "direct": "direct",
+            "one_stop": "1-stop",
+            "two_stop": "2-stop"
+        }
+        if filtered_routes:
+            self.display_routes(filtered_routes, self.currency_var.get().split(" - ")[0])
+        else:
+            # Clear out old route widgets
+            for widget in self.result_scrollable_frame.winfo_children():
+                widget.destroy()
+
+            # Show a message if no flights found
+            self.show_message(f"No {filter_labels.get(filter_type, filter_type)} flights found.")
+
+            # Clear the map
+            self.draw_map(route=None)
+
     def show_message(self, msg):
         tk.Label(self.result_scrollable_frame, text=msg, font=self.control_font).pack(fill=tk.X, padx=5, pady=2)
 
     def display_routes(self, routes, currency_code):
+        # Clear the result frame first to remove any old search results
+        for widget in self.result_scrollable_frame.winfo_children():
+            widget.destroy()
+
+        # Clear the previous map drawing to prevent glitches
+        self.draw_map(route=None)
+
         if not routes:
-            self.show_message("No flights found.")
+            self.show_message("No flights available.")
             self.draw_map()
             return
-
-        first_route = routes[0][0]
-        self.draw_map(route=first_route)
 
         # Retrieve the currency's "symbol" (which is actually code) & rate
         if currency_code not in currency_rates:
@@ -363,32 +430,49 @@ class MapApp:
         code_string = currency_rates[currency_code]["symbol"]  # e.g. "USD"
         rate = currency_rates[currency_code]["rate"]
 
-        for (routelist, dist, timing, cost_sgd, cabin) in routes:
-            cost_converted = cost_sgd * rate
+        # Display Flight Routes (Normal Flights)
+        if isinstance(routes[0], tuple) and len(routes[0]) == 5:
+            for (routelist, dist, timing, cost_sgd, cabin) in routes:
+                cost_converted = cost_sgd * rate
+                segments = [f"{airport} ({airport_data[airport]['name']})" for airport in routelist]
+                route_line = " -> ".join(segments)
+                display_str = (
+                    f"{route_line}\n"
+                    f"  Total Distance: {dist} km\n"
+                    f"  Total Timing: {timing} min\n"
+                    f"  Price: {code_string}{cost_converted:.2f} ({cabin})"
+                )
+                # Create a 'card-like' frame to hold route info + a button
+                card_frame = tk.Frame(self.result_scrollable_frame, bg="#2B2B2B", bd=2, relief="groove")
+                card_frame.pack(fill="x", expand=True, padx=10, pady=5)
 
-            segments = []
-            for airport in routelist:
-                airport_name = airport_data[airport]["name"]
-                segments.append(f"{airport} ({airport_name})")
-            route_line = " -> ".join(segments)
+                # A label for the route details, filling most of the card's width
+                info_label = tk.Label(
+                    card_frame,
+                    text=display_str,
+                    font=self.control_font,
+                    bg="#2B2B2B",
+                    fg="white",
+                    justify="left",
+                    anchor="w",
+                    #wraplength="600"
+                )
+                info_label.pack(side="left", fill="both", expand=True, padx=10, pady=5)
 
-            display_str = (
-                f"{route_line}\n"
-                f"  Total Distance: {dist} km\n"
-                f"  Total Timing: {timing} min\n"
-                f"  Price: {code_string}{cost_converted:.2f} ({cabin})"
-            )
+            # Draw the first filtered route (if have) to visualize it
+            if routes:
+                self.draw_map(route=routes[0][0])
 
-            btn = tk.Button(
-                self.result_scrollable_frame,
-                text=display_str,
-                font=self.control_font,
-                justify="left",
-                anchor="w",
-                wraplength=500,
-                command=lambda r=routelist: self.draw_map(route=r)
-            )
-            btn.pack(fill=tk.X, padx=5, pady=5)
+        # Display Recommended Neighboring Routes (No Regular Flights Found)
+        else:
+            for neighbour, distance, price in routes:
+                if neighbour in airport_data:
+                    airport_name = airport_data[neighbour]['name']
+                    self.show_message(
+                        f"{neighbour} ({airport_name}) - Distance: {distance} km | Price: ${price:.2f}"
+                    )
+            self.draw_map()
+
 
 if __name__ == "__main__":
     root = tk.Tk()
