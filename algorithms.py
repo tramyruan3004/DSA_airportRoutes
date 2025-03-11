@@ -20,7 +20,7 @@ def calculate_cost(distance, stops):
         return distance * cost_per_km * 0.7
 
 
-def assign_neighbour(graph, departure_code, destination_code):
+def assign_neighbour(graph, departure_code, destination_code, cabin):
     neighbours = []
     routes = graph.get_routes(departure_code)
 
@@ -33,13 +33,13 @@ def assign_neighbour(graph, departure_code, destination_code):
         neighbour = route["destination"]
         neighbour_info = graph.airport_info[neighbour]
         distance = route["km"]
+        time = route["min"]
         price = distance * 0.5
 
         # only add the neighbour if it is in the same country as destination
         if neighbour_info["country"] == destination_country:
-            neighbours.append((neighbour, distance, price))
-
-        return neighbours
+            neighbours.append(([departure_code, neighbour], distance, time, price, cabin))
+    return neighbours
 
 
 def find_one_way_flights(graph, departure, destination, stops=0, filter_type="cheapest", cabin="Economy"):
@@ -78,11 +78,27 @@ def find_one_way_flights(graph, departure, destination, stops=0, filter_type="ch
     else:
         # fastest => sort by total_time => x[2]
         found_routes.sort(key=lambda x: x[2])
-
+        
     # If no routes were found, call assign_neighbour
     if not found_routes:
-        print("No flights available.")
+        print("No direct flights available, looking into neighbouring airports.")
         # call the assign_neighbour function from your NeighbourAirport class.
-        found_routes = assign_neighbour(graph, departure, destination)
+        found_routes = assign_neighbour(graph, departure, destination, cabin)
 
+    return found_routes
+
+def find_multi_city_flights(graph, departure, middle, destination, stops, filter_type, cabin):
+    found_routes = []
+    firstHalfRoutes = find_one_way_flights(graph, departure, middle, stops, filter_type, cabin) # get routes from departure airport to middle airport
+    for first in firstHalfRoutes:
+        lastStop = first[0][-1] # to accomodate for neighbouring airports
+        secondHalfRoutes = find_one_way_flights(graph, lastStop, destination, stops, filter_type, cabin) # check flights from last dest airport in first half to final dest airport
+        for second in secondHalfRoutes:
+            arr = []
+            arr.append(list(first[0])+list(second[0][1:])) # airports
+            arr.append(first[1] + second[1]) # total distance
+            arr.append(first[2] + second[2]) # total time taken
+            arr.append(first[3] + second[3]) # total costs
+            found_routes.append(arr)
+        
     return found_routes
