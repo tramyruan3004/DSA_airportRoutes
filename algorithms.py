@@ -11,13 +11,13 @@ CABIN_MULTIPLIERS = {
 def calculate_cost(distance, stops):
     cost_per_km = 0.3
     if stops == 0:
-        return distance * cost_per_km
+        return round(distance * cost_per_km, 2)
     elif stops == 1:
-        return distance * cost_per_km * 0.85
+        return round(distance * cost_per_km * 0.85, 2)
     elif stops == 2:
-        return distance * cost_per_km * 0.75
+        return round(distance * cost_per_km * 0.75, 2)
     else:
-        return distance * cost_per_km * 0.7
+        return round(distance * cost_per_km * 0.7, 2)
 
 
 def assign_neighbour(graph, departure_code, destination_code, cabin):
@@ -34,7 +34,7 @@ def assign_neighbour(graph, departure_code, destination_code, cabin):
         neighbour_info = graph.airport_info[neighbour]
         distance = route["km"]
         time = route["min"]
-        price = distance * 0.5
+        price = round(distance * 0.5, 2)
 
         # only add the neighbour if it is in the same country as destination
         if neighbour_info["country"] == destination_country:
@@ -58,7 +58,7 @@ def find_one_way_flights(graph, departure, destination, stops=0, filter_type="ch
                 stops_so_far = len(route_list) - 2
                 base_cost = calculate_cost(dist_so_far, stops_so_far)
                 cabin_multiplier = CABIN_MULTIPLIERS.get(cabin, 1.0)
-                final_cost = base_cost * cabin_multiplier
+                final_cost = round(base_cost * cabin_multiplier, 2)
                 found_routes.append((route_list, dist_so_far, time_so_far, final_cost, cabin))
             continue
 
@@ -71,13 +71,16 @@ def find_one_way_flights(graph, departure, destination, stops=0, filter_type="ch
             new_route_list = route_list + [neighbor]
             queue.append((neighbor, new_route_list, new_dist, new_time))
 
-    # Sort by cost or time
+    # Sort by cost, time or distance
     if filter_type == "cheapest":
-        # sort by final_cost => x[3]
+        # cheapest => sort by final cost => x[3]
         found_routes.sort(key=lambda x: x[3])
-    else:
-        # fastest => sort by total_time => x[2]
+    elif filter_type == "fastest":
+        # fastest => sort by total time => x[2]
         found_routes.sort(key=lambda x: x[2])
+    elif filter_type == "shortest":
+        # shortest => sort by total distance => x[1]
+        found_routes.sort(key=lambda x: x[1])
         
     # If no routes were found, call assign_neighbour
     if not found_routes:
@@ -99,6 +102,19 @@ def find_multi_city_flights(graph, departure, middle, destination, stops, filter
             arr.append(first[1] + second[1]) # total distance
             arr.append(first[2] + second[2]) # total time taken
             arr.append(first[3] + second[3]) # total costs
+            print(first[3], second[3])
             found_routes.append(arr)
+    print(found_routes)
+    # Sort by cost, time or distance
+    if filter_type == "cheapest":
+        # cheapest => sort by final cost => x[3]
+        found_routes.sort(key=lambda x: x[3])
+    elif filter_type == "fastest":
+        # fastest => sort by total time => x[2]
+        found_routes.sort(key=lambda x: x[2])
+    elif filter_type == "shortest":
+        # shortest => sort by total distance => x[1]
+        found_routes.sort(key=lambda x: x[1])
         
+    print(found_routes)
     return found_routes
