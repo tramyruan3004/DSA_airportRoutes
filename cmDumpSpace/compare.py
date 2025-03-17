@@ -77,16 +77,16 @@ def find_one_way_flights(graph, departure, destination, stops=0, filter_type="ch
                 new_route_list = route_list + [neighbor]
                 queue.append((neighbor, new_route_list, new_dist, new_time))
 
-    # Sort by cost, time or distance
+    # # Sort by cost, time or distance
     if filter_type == "cheapest":
         # cheapest => sort by final cost => x[3]
         found_routes.sort(key=lambda x: x[3])
-    elif filter_type == "fastest":
-        # fastest => sort by total time => x[2]
-        found_routes.sort(key=lambda x: x[2])
-    elif filter_type == "shortest":
-        # shortest => sort by total distance => x[1]
-        found_routes.sort(key=lambda x: x[1])
+    # elif filter_type == "fastest":
+    #     # fastest => sort by total time => x[2]
+    #     found_routes.sort(key=lambda x: x[2])
+    # elif filter_type == "shortest":
+    #     # shortest => sort by total distance => x[1]
+    #     found_routes.sort(key=lambda x: x[1])
         
     # If no routes were found, call assign_neighbour
     if not found_routes:

@@ -42,7 +42,7 @@ def assign_neighbour(graph, departure_code, destination_code, cabin):
     return neighbours
 
 
-def find_one_way_flights(graph, departure, destination, stops=0, filter_type="cheapest", cabin="Economy"):
+def find_one_way_flights(graph, departure, destination, stops=0, cabin="Economy"):
     found_routes = []
     # BFS queue: (current_airport, route_list, distance_so_far, time_so_far)
     queue = deque()
@@ -53,35 +53,31 @@ def find_one_way_flights(graph, departure, destination, stops=0, filter_type="ch
     while queue:
         current_airport, route_list, dist_so_far, time_so_far = queue.popleft()
 
-        if len(route_list) == max_length:
-            if current_airport == destination:
-                stops_so_far = len(route_list) - 2
-                base_cost = calculate_cost(dist_so_far, stops_so_far)
-                cabin_multiplier = CABIN_MULTIPLIERS.get(cabin, 1.0)
-                final_cost = round(base_cost * cabin_multiplier, 2)
-                found_routes.append((route_list, dist_so_far, time_so_far, final_cost, cabin))
+        # Modified condition: Check if we've reached destination with VALID stops (≤ max_length)
+        # Instead of only adding routes with EXACTLY max_length
+        if current_airport == destination and len(route_list) <= max_length and len(route_list) >= 2:
+            stops_so_far = len(route_list) - 2
+            base_cost = calculate_cost(dist_so_far, stops_so_far)
+            cabin_multiplier = CABIN_MULTIPLIERS.get(cabin, 1.0)
+            final_cost = round(base_cost * cabin_multiplier, 2)
+            found_routes.append((route_list, dist_so_far, time_so_far, final_cost, cabin))
+            # Don't continue exploring from destination (saves time)
             continue
 
-        for route in graph.get_routes(current_airport):
-            neighbor = route["destination"]
-            if neighbor in route_list:
-                continue
-            new_dist = dist_so_far + route["km"]
-            new_time = time_so_far + route["min"]
-            new_route_list = route_list + [neighbor]
-            queue.append((neighbor, new_route_list, new_dist, new_time))
+        # Only explore further if we haven't exceeded max_length
+        if len(route_list) < max_length:
+            for route in graph.get_routes(current_airport):
+                neighbor = route["destination"]
+                if neighbor in route_list:
+                    continue
+                new_dist = dist_so_far + route["km"]
+                new_time = time_so_far + route["min"]
+                new_route_list = route_list + [neighbor]
+                queue.append((neighbor, new_route_list, new_dist, new_time))
 
-    # Sort by cost, time or distance
-    if filter_type == "cheapest":
-        # cheapest => sort by final cost => x[3]
-        found_routes.sort(key=lambda x: x[3])
-    elif filter_type == "fastest":
-        # fastest => sort by total time => x[2]
-        found_routes.sort(key=lambda x: x[2])
-    elif filter_type == "shortest":
-        # shortest => sort by total distance => x[1]
-        found_routes.sort(key=lambda x: x[1])
-        
+    
+    found_routes.sort(key=lambda x: x[3])
+
     # If no routes were found, call assign_neighbour
     if not found_routes:
         print("No direct flights available, looking into neighbouring airports.")
@@ -89,6 +85,7 @@ def find_one_way_flights(graph, departure, destination, stops=0, filter_type="ch
         found_routes = assign_neighbour(graph, departure, destination, cabin)
 
     return found_routes
+
 
 def find_multi_city_flights(graph, departure, middle, destination, stops, filter_type, cabin):
     found_routes = []
