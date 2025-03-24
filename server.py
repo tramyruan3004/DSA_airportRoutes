@@ -39,13 +39,18 @@ def get_routes():
     cabin = request.args.get('cabin', 'Economy')
     route_type = request.args.get('routeType', 'cheapest')
     trip_type = request.args.get('tripType', 'oneway')
-
+    mode = request.args.get('mode')
     print("Received Request →", request.args)
-
-    if trip_type == 'multicity' and middle:
-        routes = algorithms.find_multi_city_flights(graph, departure, middle, destination, stops, route_type, cabin)
+    if mode == 'quick':
+        if trip_type == 'multicity' and middle:
+            routes = algorithms.find_multi_city_flights(graph, departure, middle, destination, stops, route_type, cabin)
+        else:
+            routes = algorithms.find_one_way_flights_dijkstra(graph, departure, destination, stops, cabin)
     else:
-        routes = algorithms.find_one_way_flights(graph, departure, destination, stops, cabin)
+        if trip_type == 'multicity' and middle:
+            routes = algorithms.find_multi_city_flights(graph, departure, middle, destination, stops, route_type, cabin)
+        else:
+            routes = algorithms.find_one_way_flights(graph, departure, destination, stops, cabin)
 
     formatted_routes = format_routes(routes)
     print("Found Routes →", formatted_routes[:2])

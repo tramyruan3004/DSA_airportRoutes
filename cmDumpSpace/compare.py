@@ -433,3 +433,73 @@ valid_airport_coords = {
 
 # Example usage:
 comparison = compare_search_approaches(airport_graph, "HAN", "ICN", max_stops=2)
+
+
+def find_one_way_flights_dijkstra_short_result(graph, departure, destination, stops=0, cabin="Economy", num_results=5):
+    found_routes = []
+    max_stops = stops  # Maximum allowed stops
+    direct_flight_exists = False
+    
+    # Priority queue: (total_distance, stops_so_far, current_airport, route_list, dist_so_far, time_so_far)
+    heap = []
+    heapq.heappush(heap, (0, 0, departure, [departure], 0, 0))
+    
+    # Dictionary to track best distance for (airport, stops_so_far)
+    best_distances = defaultdict(lambda: float('inf'))
+    best_distances[(departure, 0)] = 0
+    
+    while heap and len(found_routes) < num_results:
+        total_dist, stops_so_far, current_airport, route_list, dist_so_far, time_so_far = heapq.heappop(heap)
+        
+        # Skip if we've found a better path to this node with same or fewer stops
+        if total_dist > best_distances[(current_airport, stops_so_far)]:
+            continue
+            
+        # Found destination
+        if current_airport == destination and len(route_list) >= 2:
+            # Calculate cost
+            base_cost = calculate_cost(dist_so_far, stops_so_far)
+            cabin_multiplier = CABIN_MULTIPLIERS.get(cabin, 1.0)
+            final_cost = round(base_cost * cabin_multiplier, 2)
+            
+            # Add to results
+            found_routes.append((route_list, dist_so_far, time_so_far, final_cost, cabin))
+            
+            # Mark if this is a direct flight
+            if stops_so_far == 0:
+                direct_flight_exists = True
+            continue
+            
+        # Stop if we've exceeded max allowed stops
+        if stops_so_far >= max_stops:
+            continue
+            
+        # Explore neighbors
+        for route in graph.get_routes(current_airport):
+            neighbor = route["destination"]
+            if neighbor in route_list:  # Prevent cycles
+                continue
+                
+            new_dist = dist_so_far + route["km"]
+            new_time = time_so_far + route["min"]
+            new_stops = stops_so_far + (0 if neighbor == destination else 1)
+            new_route_list = route_list + [neighbor]
+            
+            # Only proceed if this path is better
+            if new_dist < best_distances[(neighbor, new_stops)]:
+                best_distances[(neighbor, new_stops)] = new_dist
+                heapq.heappush(heap, (new_dist, new_stops, neighbor, new_route_list, new_dist, new_time))
+    
+    # If we specifically asked for direct flights and found some, return only those
+    if stops == 0 and direct_flight_exists:
+        found_routes = [route for route in found_routes if len(route[0]) == 2]
+    
+    # If no routes found, try neighboring airports
+    if not found_routes:
+        print("No direct flights available, looking into neighbouring airports.")
+        found_routes = assign_neighbour(graph, departure, destination, cabin)
+    
+    # Sort by stops first, then distance
+    found_routes.sort(key=lambda x: (len(x[0])-2, x[1]))
+    
+    return found_routes[:num_results]

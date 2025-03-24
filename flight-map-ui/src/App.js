@@ -22,7 +22,7 @@ const App = () => {
 
   const fetchRoutes = async () => {
     if (!departure || !destination) return;
-    let query = `departure=${departure.value}&destination=${destination.value}&stops=2&cabin=${cabin}&tripType=${tripType}&routeType=${routeType}`;
+    let query = `departure=${departure.value}&destination=${destination.value}&stops=2&cabin=${cabin}&tripType=${tripType}&routeType=${routeType}&mode=${mode}`;
     if (tripType === 'multicity' && middle) {
       query += `&middle=${middle.value}`;
     }
