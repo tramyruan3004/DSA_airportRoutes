@@ -43,17 +43,18 @@ def get_routes():
     print("Received Request →", request.args)
     if mode == 'quick':
         if trip_type == 'multicity' and middle:
-            routes = algorithms.find_multi_city_flights(graph, departure, middle, destination, stops, route_type, cabin)
+            routes = algorithms.find_multi_city_flights(graph, departure, middle, destination, 1, route_type, cabin)
         else:
             routes = algorithms.find_one_way_flights_dijkstra(graph, departure, destination, stops, cabin)
     else:
         if trip_type == 'multicity' and middle:
-            routes = algorithms.find_multi_city_flights(graph, departure, middle, destination, stops, route_type, cabin)
+            routes = algorithms.find_multi_city_flights(graph, departure, middle, destination, 1, route_type, cabin)
+
         else:
             routes = algorithms.find_one_way_flights(graph, departure, destination, stops, cabin)
 
     formatted_routes = format_routes(routes)
-    print("Found Routes →", formatted_routes[:2])
+    print("Found Routes →", formatted_routes[:10])
 
     return jsonify(formatted_routes)
 

@@ -57,12 +57,16 @@ const App = () => {
 
   const handleStopFilterChange = (type) => {
     setStopFilters(prev => ({ ...prev, [type]: !prev[type] }));
-    setSelectedRoute(null); // Reset selected route on filter change
+    setSelectedRoute(null);
+  };
+
+  const getStopCount = (pathLength) => {
+    return tripType === 'multicity' ? pathLength - 3 : pathLength - 2;
   };
 
   const sortRoutes = (routes) => {
-    const direct = routes.filter(r => r.path.length - 2 === 0);
-    const others = routes.filter(r => r.path.length - 2 !== 0);
+    const direct = routes.filter(r => getStopCount(r.path.length) === 0);
+    const others = routes.filter(r => getStopCount(r.path.length) !== 0);
     const sortFn = routeType === 'cheapest'
       ? (a, b) => a.price - b.price
       : (a, b) => a.duration - b.duration;
@@ -72,7 +76,7 @@ const App = () => {
   const filteredRoutes = Array.isArray(foundRoutes)
     ? sortRoutes(
       foundRoutes.filter(route => {
-        const stops = route.path.length - 2;
+        const stops = getStopCount(route.path.length);
         return (stops === 0 && stopFilters.direct) ||
           (stops === 1 && stopFilters.oneStop) ||
           (stops === 2 && stopFilters.twoStop);
@@ -216,6 +220,7 @@ const App = () => {
                 departure={departure}
                 destination={destination}
                 routes={selectedRoute ? [selectedRoute] : (filteredRoutes.length > 0 ? [filteredRoutes[0]] : [])}
+                tripType={tripType}
               />
             </div>
           </div>

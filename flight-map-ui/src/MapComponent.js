@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import * as maptilersdk from '@maptiler/sdk';
 import '@maptiler/sdk/dist/maptiler-sdk.css';
 
-const MapComponent = ({ routes, departure, destination }) => {
+const MapComponent = ({ routes, departure, destination, tripType }) => {
   const mapContainer = useRef(null);
   const map = useRef(null);
   const airportDataRef = useRef({});
@@ -64,14 +64,7 @@ const MapComponent = ({ routes, departure, destination }) => {
     const clusterFeatures = [];
 
     routes.forEach((route, idx) => {
-      const routePath = Array.isArray(route?.path)
-        ? route.path
-        : Array.isArray(route?.[0]) && Array.isArray(route?.[0][0])
-        ? route[0][0]
-        : Array.isArray(route?.[0])
-        ? route[0]
-        : [];
-
+      const routePath = Array.isArray(route?.path) ? route.path : [];
       const coordinates = routePath.map(getAirportPosition);
       const validCoords = coordinates.filter(isValidCoord);
       if (validCoords.length < 2) return;
@@ -80,10 +73,7 @@ const MapComponent = ({ routes, departure, destination }) => {
         type: 'geojson',
         data: {
           type: 'Feature',
-          geometry: {
-            type: 'LineString',
-            coordinates: validCoords,
-          },
+          geometry: { type: 'LineString', coordinates: validCoords },
         },
       });
 
@@ -100,11 +90,16 @@ const MapComponent = ({ routes, departure, destination }) => {
         },
       });
 
+      const mainStops = [0, routePath.length - 1];
+      if (tripType === 'multicity' && routePath.length >= 3) {
+        mainStops.splice(1, 0, Math.floor(routePath.length / 2));
+      }
+
       routePath.forEach((iata, i) => {
         const coord = coordinates[i];
         if (!isValidCoord(coord)) return;
-        const isEdge = i === 0 || i === routePath.length - 1;
-        const color = isEdge ? '#722f37' : '#ffaa00';
+
+        const color = mainStops.includes(i) ? '#ff0000' : '#ffaa00';
 
         const marker = new maptilersdk.Marker({ color })
           .setLngLat(coord)
@@ -112,7 +107,7 @@ const MapComponent = ({ routes, departure, destination }) => {
           .addTo(map.current);
         markerRefs.current.push(marker);
 
-        if (!isEdge) {
+        if (!mainStops.includes(i)) {
           clusterFeatures.push({
             type: 'Feature',
             geometry: { type: 'Point', coordinates: coord },
@@ -168,9 +163,8 @@ const MapComponent = ({ routes, departure, destination }) => {
   useEffect(() => {
     if (!routes || !map.current || !Object.keys(airportDataRef.current).length) return;
 
-    const routePath = Array.isArray(routes[0]?.path)
-      ? routes[0].path
-      : Array.isArray(routes[0]?.[0]) ? routes[0][0] : [];
+    const routePath = Array.isArray(routes[0]?.path) ? routes[0].path : [];
+    const coords = routePath.map(getAirportPosition).filter(isValidCoord);
 
     const depIATA = routePath[0];
     const destIATA = routePath[routePath.length - 1];
@@ -179,16 +173,11 @@ const MapComponent = ({ routes, departure, destination }) => {
     const destCont = airportDataRef.current[destIATA]?.continent;
     const sameContinent = depCont && destCont && depCont === destCont;
     const projectionMode = sameContinent ? 'mercator' : 'globe';
-
     map.current.setProjection(projectionMode);
 
-    const depCoord = getAirportPosition(depIATA);
-    const destCoord = getAirportPosition(destIATA);
-
-    if (isValidCoord(depCoord) && isValidCoord(destCoord)) {
+    if (coords.length > 0) {
       const bounds = new maptilersdk.LngLatBounds();
-      bounds.extend(depCoord);
-      bounds.extend(destCoord);
+      coords.forEach(c => bounds.extend(c));
       map.current.fitBounds(bounds, { padding: 60, duration: 1000 });
     }
 

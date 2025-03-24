@@ -67,29 +67,6 @@ def find_one_way_flights(graph, departure, destination, stops=0, cabin="Economy"
     found_routes = sort_routes_by_stops_and_price(found_routes)
     return found_routes
 
-def find_multi_city_flights(graph, departure, middle, destination, stops, filter_type, cabin):
-    found_routes = []
-    firstHalfRoutes = find_one_way_flights(graph, departure, middle, stops, cabin)
-    for first in firstHalfRoutes:
-        lastStop = first[0][-1]
-        secondHalfRoutes = find_one_way_flights(graph, lastStop, destination, stops, cabin)
-        for second in secondHalfRoutes:
-            arr = []
-            arr.append(list(first[0]) + list(second[0][1:]))
-            arr.append(first[1] + second[1])
-            arr.append(first[2] + second[2])
-            arr.append(first[3] + second[3])
-            arr.append(cabin)
-            found_routes.append(arr)
-    if filter_type == "cheapest":
-        found_routes = sort_routes_by_stops_and_price(found_routes)
-    elif filter_type == "fastest":
-        found_routes.sort(key=lambda x: x[2])
-    elif filter_type == "shortest":
-        found_routes.sort(key=lambda x: x[1])
-    return found_routes
-
-
 def find_one_way_flights_dijkstra(graph, departure, destination, stops=0, cabin="Economy"):
     found_routes = []
     max_stops = stops
@@ -211,3 +188,20 @@ def find_optimal_flights_complete(graph, departure, destination, max_stops=2, ca
     found_routes.sort(key=lambda x: (len(x[0])-2, x[1]))
     
     return found_routes
+
+def find_multi_city_flights(graph, departure, middle, destination, max_stops = 1, filter_type='cheapest', cabin='Economy'):
+    all_routes = []
+    first_half_routes = find_one_way_flights(graph, departure, middle, stops=max_stops)
+    for r1 in first_half_routes:
+        mid = r1[0][-1]
+        second_half_routes = find_one_way_flights(graph, mid, destination, stops=max_stops)
+        for r2 in second_half_routes:
+            full_path = r1[0] + r2[0][1:]  # Avoid duplicate middle
+            total_dist = r1[1] + r2[1]
+            total_time = r1[2] + r2[2]
+            total_cost = round(r1[3] + r2[3], 2)
+            all_routes.append((full_path, total_dist, total_time, total_cost, cabin))
+    
+    all_routes = sort_routes_by_stops_and_price(all_routes)
+    return all_routes
+

@@ -1,5 +1,5 @@
 import time
-from collections import deque
+from collections import deque, defaultdict
 from heapq import heappush, heappop
 import json
 import dataParser
@@ -259,7 +259,7 @@ def find_one_way_flights_dijkstra_optimised(graph, departure, destination, stops
     
     return found_routes
 
-def find_multi_city_flights(graph, departure, middle, destination, stops, filter_type, cabin):
+def find_multi_city_flights(graph, departure, middle, destination, stops, filter_type="cheapest", cabin="Economy"):
     found_routes = []
     firstHalfRoutes = find_one_way_flights(graph, departure, middle, stops, filter_type, cabin) # get routes from departure airport to middle airport
     for first in firstHalfRoutes:
@@ -271,9 +271,9 @@ def find_multi_city_flights(graph, departure, middle, destination, stops, filter
             arr.append(first[1] + second[1]) # total distance
             arr.append(first[2] + second[2]) # total time taken
             arr.append(first[3] + second[3]) # total costs
-            print(first[3], second[3])
+            # print(first[3], second[3])
             found_routes.append(arr)
-    print(found_routes)
+    # print(found_routes)
     # Sort by cost, time or distance
     if filter_type == "cheapest":
         # cheapest => sort by final cost => x[3]
@@ -431,8 +431,95 @@ valid_airport_coords = {
     if lat is not None and lon is not None
 }
 
+def find_multi_city_flights_optimized(graph, departure, middle, destination, max_stops=2, filter_type='cheapest', cabin='Economy'):
+    results = []
+    queue = deque()
+    queue.append((departure, [departure], 0, 0, 0, False))  # (curr, path, dist, time, stops, passed_middle)
+
+    while queue:
+        curr, path, dist, time_spent, stops, passed_middle = queue.popleft()
+
+        if stops > max_stops:
+            continue
+
+        if curr == middle:
+            passed_middle = True
+
+        if curr == destination and passed_middle:
+            total_stops = len(path) - 2
+            base_cost = calculate_cost(dist, total_stops)
+            final_cost = round(base_cost * CABIN_MULTIPLIERS.get(cabin, 1.0), 2)
+            results.append((path, dist, time_spent, final_cost, cabin))
+            continue
+
+        for route in graph.get_routes(curr):
+            next_airport = route["destination"]
+            if next_airport in path:
+                continue
+            new_path = path + [next_airport]
+            new_dist = dist + route["km"]
+            new_time = time_spent + route["min"]
+            queue.append((next_airport, new_path, new_dist, new_time, stops + 1, passed_middle))
+
+    if filter_type == "cheapest":
+        results.sort(key=lambda x: x[3])
+    elif filter_type == "fastest":
+        results.sort(key=lambda x: x[2])
+    elif filter_type == "shortest":
+        results.sort(key=lambda x: x[1])
+
+    return results
+
+# def bfs_routes(graph, start, end, max_stops = 1):
+#     routes = []
+#     queue = deque()
+#     queue.append((start, [start], 0, 0))
+#     while queue:
+#         curr, path, dist, time = queue.popleft()
+#         if len(path) > max_stops + 2:
+#             continue
+#         if curr == end and len(path) >= 2:
+#             stops = len(path) - 2
+#             cost = calculate_cost(dist, stops)
+#             cost = round(cost * CABIN_MULTIPLIERS.get(cabin, 1.0), 2)
+#             routes.append((path, dist, time, cost, cabin))
+#             continue
+#         for route in graph.get_routes(curr):
+#             next_airport = route['destination']
+#             if next_airport in path:
+#                 continue
+#             queue.append((
+#                 next_airport,
+#                 path + [next_airport],
+#                 dist + route['km'],
+#                 time + route['min']
+#             ))
+#     return routes
+
+def find_multi_city_flights_reUse(graph, departure, middle, destination, max_stops = 1, filter_type='cheapest', cabin='Economy'):
+    all_routes = []
+    first_half_routes = find_one_way_flights(graph, departure, middle, stops=max_stops)
+    for r1 in first_half_routes:
+        mid = r1[0][-1]
+        second_half_routes = find_one_way_flights(graph, mid, destination, stops=max_stops)
+        for r2 in second_half_routes:
+            full_path = r1[0] + r2[0][1:]  # Avoid duplicate middle
+            total_dist = r1[1] + r2[1]
+            total_time = r1[2] + r2[2]
+            total_cost = round(r1[3] + r2[3], 2)
+            all_routes.append((full_path, total_dist, total_time, total_cost, cabin))
+
+    return all_routes
+
+def sort_routes_by_stops_and_price(routes):
+    return sorted(routes, key=lambda r: (len(r[0]) - 2, r[3]))
+
 # Example usage:
-comparison = compare_search_approaches(airport_graph, "HAN", "ICN", max_stops=2)
+# comparison = compare_search_approaches(airport_graph, "HAN", "ICN", max_stops=2)
+find_routes = find_multi_city_flights_reUse(airport_graph, "HAN", "ICN", "SIN", max_stops = 1)
+find_routes = sort_routes_by_stops_and_price(find_routes)
+print(len(find_routes))
+print(find_routes[:20])
 
 
 def find_one_way_flights_dijkstra_short_result(graph, departure, destination, stops=0, cabin="Economy", num_results=5):
