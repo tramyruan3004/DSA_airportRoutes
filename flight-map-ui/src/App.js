@@ -5,7 +5,7 @@ import MapComponent from './MapComponent';
 import { loadAirportOptions } from './utils/airportsList';
 
 const App = () => {
-  const [mode, setMode] = useState('quick');
+  const [mode, setMode] = useState('complete');
   const [tripType, setTripType] = useState('oneway');
   const [airportOptions, setAirportOptions] = useState([]);
   const [departure, setDeparture] = useState(null);
@@ -107,8 +107,8 @@ const App = () => {
             <p className="hero-subtitle">Experience a smooth and smart flight search journey</p>
 
             <div className="mode-navbar">
-              <button className={mode === 'quick' ? 'nav-tab active' : 'nav-tab'} onClick={() => setMode('quick')}>Quick (Dijkstra)</button>
               <button className={mode === 'complete' ? 'nav-tab active' : 'nav-tab'} onClick={() => setMode('complete')}>Complete (BFS)</button>
+              <button className={mode === 'quick' ? 'nav-tab active' : 'nav-tab'} onClick={() => setMode('quick')}>Quick (Dijkstra)</button>
             </div>
 
             <div className="search-form-container">
@@ -143,8 +143,8 @@ const App = () => {
               <div className="flight-info">
                 <h2>Flight Information</h2>
                 <div className="mode-switch">
-                  <span className={mode === 'quick' ? 'mode-btn active' : 'mode-btn'}>Quick</span>
                   <span className={mode === 'complete' ? 'mode-btn active' : 'mode-btn'}>Complete</span>
+                  <span className={mode === 'quick' ? 'mode-btn active' : 'mode-btn'}>Quick</span>
                 </div>
                 <div className="input-pair">
                   <div><label>From</label><input className="mini-input" type="text" value={departure?.label || ''} readOnly /></div>
