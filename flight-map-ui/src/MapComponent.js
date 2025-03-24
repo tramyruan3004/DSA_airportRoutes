@@ -1,9 +1,8 @@
-// ✅ Final fix: Preserve departure/destination markers after route plotting
 import React, { useEffect, useRef } from 'react';
 import * as maptilersdk from '@maptiler/sdk';
 import '@maptiler/sdk/dist/maptiler-sdk.css';
 
-const MapComponent = ({ routes, departure, destination, fullRoutes }) => {
+const MapComponent = ({ routes, departure, destination }) => {
   const mapContainer = useRef(null);
   const map = useRef(null);
   const airportDataRef = useRef({});
@@ -36,92 +35,18 @@ const MapComponent = ({ routes, departure, destination, fullRoutes }) => {
     fetchAirportData();
   }, []);
 
-  useEffect(() => {
-    if (!Object.keys(airportDataRef.current).length || !map.current) return;
-    if (departure?.value && destination?.value) {
-      const depCont = airportDataRef.current[departure.value]?.continent;
-      const destCont = airportDataRef.current[destination.value]?.continent;
-      const sameContinent = depCont && destCont && depCont === destCont;
-      const projectionMode = sameContinent ? 'mercator' : 'globe';
-
-      const adjustMap = () => {
-        map.current.setProjection(projectionMode);
-        drawBaseMarkers();
-        const depCoord = getAirportPosition(departure.value);
-        const destCoord = getAirportPosition(destination.value);
-
-        if (isValidCoord(depCoord) && isValidCoord(destCoord)) {
-          const bounds = new maptilersdk.LngLatBounds();
-          bounds.extend(depCoord);
-          bounds.extend(destCoord);
-          map.current.fitBounds(bounds, { padding: 60, duration: 1000 });
-        }
-      };
-
-      if (!map.current.isStyleLoaded()) {
-        map.current.once('style.load', adjustMap);
-      } else {
-        adjustMap();
-      }
-    }
-  }, [departure, destination]);
-
-  useEffect(() => {
-    if (!routes || !Object.keys(airportDataRef.current).length || !map.current) return;
-    const draw = () => {
-      clearAllMarkers();
-      drawRoutes(routes);
-      drawBaseMarkers();
-
-      if (routes.length > 0) {
-        const routePath = Array.isArray(routes[0]?.path) ? routes[0].path : Array.isArray(routes[0]?.[0]) ? routes[0][0] : [];
-        const coordinates = routePath.map(getAirportPosition).filter(isValidCoord);
-        if (coordinates.length >= 2) {
-          const bounds = new maptilersdk.LngLatBounds();
-          coordinates.forEach(coord => bounds.extend(coord));
-          map.current.fitBounds(bounds, { padding: 60, duration: 1000 });
-        }
-      }
-    };
-
-    if (!map.current.isStyleLoaded()) {
-      map.current.once('load', draw);
-    } else {
-      draw();
-    }
-  }, [routes]);
-
-  const isValidCoord = (coord) => Array.isArray(coord) && coord.length === 2 && !isNaN(coord[0]) && !isNaN(coord[1]);
+  const isValidCoord = (coord) =>
+    Array.isArray(coord) && coord.length === 2 && !isNaN(coord[0]) && !isNaN(coord[1]);
 
   const getAirportPosition = (iata) => {
     const airport = airportDataRef.current[iata];
-    if (!airport || airport.longitude == null || airport.latitude == null) {
-      console.warn(`⚠ Missing or invalid airport data for IATA: ${iata}`);
-      return null;
-    }
-    const lon = parseFloat(airport.longitude);
-    const lat = parseFloat(airport.latitude);
-    if (isNaN(lon) || isNaN(lat)) return null;
-    return [lon, lat];
+    if (!airport || airport.longitude == null || airport.latitude == null) return null;
+    return [parseFloat(airport.longitude), parseFloat(airport.latitude)];
   };
 
   const clearAllMarkers = () => {
     markerRefs.current.forEach(marker => marker.remove());
     markerRefs.current = [];
-  };
-
-  const drawBaseMarkers = () => {
-    const baseCodes = [departure?.value, destination?.value].filter(Boolean);
-    baseCodes.forEach(iata => {
-      const coord = getAirportPosition(iata);
-      if (isValidCoord(coord)) {
-        const marker = new maptilersdk.Marker({ color: '#722f37' })
-          .setLngLat(coord)
-          .setPopup(new maptilersdk.Popup().setText(iata))
-          .addTo(map.current);
-        markerRefs.current.push(marker);
-      }
-    });
   };
 
   const clearRouteLayers = () => {
@@ -137,13 +62,20 @@ const MapComponent = ({ routes, departure, destination, fullRoutes }) => {
   const drawRoutes = (routes) => {
     clearRouteLayers();
     const clusterFeatures = [];
+
     routes.forEach((route, idx) => {
-      const routePath = Array.isArray(route?.path) ? route.path : Array.isArray(route?.[0]) && Array.isArray(route?.[0][0]) ? route[0][0] : Array.isArray(route?.[0]) ? route[0] : [];
+      const routePath = Array.isArray(route?.path)
+        ? route.path
+        : Array.isArray(route?.[0]) && Array.isArray(route?.[0][0])
+        ? route[0][0]
+        : Array.isArray(route?.[0])
+        ? route[0]
+        : [];
+
       const coordinates = routePath.map(getAirportPosition);
       const validCoords = coordinates.filter(isValidCoord);
       if (validCoords.length < 2) return;
 
-      if (map.current.getSource(`route-${idx}`)) map.current.removeSource(`route-${idx}`);
       map.current.addSource(`route-${idx}`, {
         type: 'geojson',
         data: {
@@ -159,10 +91,7 @@ const MapComponent = ({ routes, departure, destination, fullRoutes }) => {
         id: `route-${idx}`,
         type: 'line',
         source: `route-${idx}`,
-        layout: {
-          'line-join': 'round',
-          'line-cap': 'round',
-        },
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
           'line-color': '#003366',
           'line-width': 3,
@@ -194,7 +123,12 @@ const MapComponent = ({ routes, departure, destination, fullRoutes }) => {
     });
 
     if (clusterFeatures.length) {
-      if (map.current.getSource(middleClusterLayerId)) map.current.removeSource(middleClusterLayerId);
+      if (map.current.getSource(middleClusterLayerId)) {
+        if (map.current.getLayer(middleClusterLayerId)) map.current.removeLayer(middleClusterLayerId);
+        if (map.current.getLayer('cluster-count')) map.current.removeLayer('cluster-count');
+        map.current.removeSource(middleClusterLayerId);
+      }
+
       map.current.addSource(middleClusterLayerId, {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: clusterFeatures },
@@ -231,11 +165,50 @@ const MapComponent = ({ routes, departure, destination, fullRoutes }) => {
     }
   };
 
+  useEffect(() => {
+    if (!routes || !map.current || !Object.keys(airportDataRef.current).length) return;
+
+    const routePath = Array.isArray(routes[0]?.path)
+      ? routes[0].path
+      : Array.isArray(routes[0]?.[0]) ? routes[0][0] : [];
+
+    const depIATA = routePath[0];
+    const destIATA = routePath[routePath.length - 1];
+
+    const depCont = airportDataRef.current[depIATA]?.continent;
+    const destCont = airportDataRef.current[destIATA]?.continent;
+    const sameContinent = depCont && destCont && depCont === destCont;
+    const projectionMode = sameContinent ? 'mercator' : 'globe';
+
+    map.current.setProjection(projectionMode);
+
+    const depCoord = getAirportPosition(depIATA);
+    const destCoord = getAirportPosition(destIATA);
+
+    if (isValidCoord(depCoord) && isValidCoord(destCoord)) {
+      const bounds = new maptilersdk.LngLatBounds();
+      bounds.extend(depCoord);
+      bounds.extend(destCoord);
+      map.current.fitBounds(bounds, { padding: 60, duration: 1000 });
+    }
+
+    clearAllMarkers();
+    drawRoutes(routes);
+  }, [routes]);
+
   return (
     <div
       ref={mapContainer}
       className="map-container"
-      style={{ height: '97vh', width: '100%', margin: 0, padding: 0, overflow: 'hidden', borderRadius: '10px', background: 'linear-gradient(to bottom right, #0d0d0d, #1a1a1a)' }}
+      style={{
+        height: '97vh',
+        width: '100%',
+        margin: 0,
+        padding: 0,
+        overflow: 'hidden',
+        borderRadius: '10px',
+        background: 'linear-gradient(to bottom right, #0d0d0d, #1a1a1a)'
+      }}
     />
   );
 };

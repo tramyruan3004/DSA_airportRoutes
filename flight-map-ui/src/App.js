@@ -20,7 +20,7 @@ const App = () => {
   const [selectedRoute, setSelectedRoute] = useState(null);
   const resultsPerPage = 30;
 
-  const handleSearch = async () => {
+  const fetchRoutes = async () => {
     if (!departure || !destination) return;
     let query = `departure=${departure.value}&destination=${destination.value}&stops=2&cabin=${cabin}&tripType=${tripType}&routeType=${routeType}`;
     if (tripType === 'multicity' && middle) {
@@ -43,6 +43,10 @@ const App = () => {
     }
   };
 
+  const handleSearch = () => {
+    fetchRoutes();
+  };
+
   useEffect(() => {
     const fetchAirports = async () => {
       const options = await loadAirportOptions();
@@ -53,6 +57,7 @@ const App = () => {
 
   const handleStopFilterChange = (type) => {
     setStopFilters(prev => ({ ...prev, [type]: !prev[type] }));
+    setSelectedRoute(null); // Reset selected route on filter change
   };
 
   const sortRoutes = (routes) => {
@@ -61,31 +66,36 @@ const App = () => {
     const sortFn = routeType === 'cheapest'
       ? (a, b) => a.price - b.price
       : (a, b) => a.duration - b.duration;
-    return [
-      ...direct.sort(sortFn),
-      ...others.sort(sortFn)
-    ];
+    return [...direct.sort(sortFn), ...others.sort(sortFn)];
   };
 
   const filteredRoutes = Array.isArray(foundRoutes)
     ? sortRoutes(
-        foundRoutes.filter(route => {
-          const stops = route.path.length - 2;
-          return (stops === 0 && stopFilters.direct) ||
-                 (stops === 1 && stopFilters.oneStop) ||
-                 (stops === 2 && stopFilters.twoStop);
-        })
-      )
+      foundRoutes.filter(route => {
+        const stops = route.path.length - 2;
+        return (stops === 0 && stopFilters.direct) ||
+          (stops === 1 && stopFilters.oneStop) ||
+          (stops === 2 && stopFilters.twoStop);
+      })
+    )
     : [];
 
   const paginatedRoutes = filteredRoutes.slice(
     currentPage * resultsPerPage,
     (currentPage + 1) * resultsPerPage
   );
+
   const totalPages = Math.ceil(filteredRoutes.length / resultsPerPage);
+
   const handleRouteSelection = (route) => {
     setSelectedRoute(route);
   };
+
+  useEffect(() => {
+    if (searchStarted) {
+      fetchRoutes();
+    }
+  }, [routeType, cabin]);
 
   return (
     <div className="app-container">
@@ -205,8 +215,7 @@ const App = () => {
               <MapComponent
                 departure={departure}
                 destination={destination}
-                routes={selectedRoute ? [selectedRoute] : [{ path: [departure?.value, destination?.value] }]}
-                fullRoutes={filteredRoutes.map(r => r.path)}
+                routes={selectedRoute ? [selectedRoute] : (filteredRoutes.length > 0 ? [filteredRoutes[0]] : [])}
               />
             </div>
           </div>
