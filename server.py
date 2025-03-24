@@ -17,13 +17,14 @@ def format_routes(routes):
     for r in routes:
         if isinstance(r, dict):
             formatted.append(r)
-        elif isinstance(r, (tuple, list)) and len(r) >= 4:
+        elif isinstance(r, (tuple, list)) and len(r) >= 6:
             formatted.append({
                 "path": r[0],
                 "distance": r[1],
                 "duration": r[2],
                 "price": r[3],
-                "cabin": r[4] if len(r) > 4 else None
+                "cabin": r[4],
+                "routeLabel": r[5] if r[5] == "Alternative via Nearby Airport" else ""
             })
     return formatted
 
@@ -49,7 +50,6 @@ def get_routes():
     else:
         if trip_type == 'multicity' and middle:
             routes = algorithms.find_multi_city_flights(graph, departure, middle, destination, 1, route_type, cabin)
-
         else:
             routes = algorithms.find_one_way_flights(graph, departure, destination, stops, cabin)
 

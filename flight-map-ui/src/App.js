@@ -135,7 +135,16 @@ const App = () => {
                   <Select classNamePrefix="react-select" options={airportOptions} value={middle} onChange={setMiddle} placeholder="Select middle airport..." />
                 </div>
               )}
-              <button className="primary-btn" onClick={handleSearch} disabled={!departure || !destination}>Search Flights</button>
+              <button
+                className="primary-btn"
+                onClick={handleSearch}
+                disabled={
+                  !departure || !destination || (tripType === 'multicity' && !middle)
+                }
+              >
+                Search Flights
+              </button>
+
             </div>
           </div>
         </div>
@@ -195,6 +204,7 @@ const App = () => {
                         {route.path.join(' ✈ ')}
                       </div>
                       <div className="flight-details">
+                        {route.routeLabel && <p><strong> {route.routeLabel}</strong></p>}
                         <p><strong>Distance:</strong> {route.distance} km</p>
                         <p><strong>Duration:</strong> {Math.floor(route.duration / 60)}h {route.duration % 60}m</p>
                         <div className="price-btn-row">
