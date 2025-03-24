@@ -1,0 +1,76 @@
+{
+    "base": "SGD",
+    "rates": {
+      "SGD": {
+        "symbol": "SGD",
+        "rate": 1.0,
+        "name": "Singapore Dollar"
+      },
+      "USD": {
+        "symbol": "USD",
+        "rate": 0.747897,
+        "name": "United States Dollar"
+      },
+      "EUR": {
+        "symbol": "EUR",
+        "rate": 0.688965,
+        "name": "Euro"
+      },
+      "GBP": {
+        "symbol": "GBP",
+        "rate": 0.587453,
+        "name": "British Pound"
+      },
+      "INR": {
+        "symbol": "INR",
+        "rate": 62.092817,
+        "name": "Indian Rupee"
+      },
+      "AUD": {
+        "symbol": "AUD",
+        "rate": 1.133311,
+        "name": "Australian Dollar"
+      },
+      "CAD": {
+        "symbol": "CAD",
+        "rate": 1.001108,
+        "name": "Canadian Dollar"
+      },
+      "CHF": {
+        "symbol": "CHF",
+        "rate": 0.642254,
+        "name": "Swiss Franc"
+      },
+      "MYR": {
+        "symbol": "MYR",
+        "rate": 3.537208,
+        "name": "Malaysian Ringgit"
+      },
+      "JPY": {
+        "symbol": "JPY",
+        "rate": 109.388446,
+        "name": "Japanese Yen"
+      },
+      "CNY": {
+        "symbol": "CNY",
+        "rate": 5.331725,
+        "name": "Chinese Yuan"
+      },
+      "KRW": {
+        "symbol": "KRW",
+        "rate": 994.359005,
+        "name": "South Korean Won"
+      },
+      "THB": {
+        "symbol": "THB",
+        "rate": 26.451859,
+        "name": "Thai Baht"
+      },
+      "VND": {
+        "symbol": "VND",
+        "rate": 19134.88,
+        "name": "Vietnamese Dong"
+      }
+    }
+  }
+  

@@ -400,10 +400,8 @@ body {
 }
 
 .stop-filters {
-  margin-bottom: 20px;
-  border: none;
-  padding: 0;
-  font-size: 0.9rem;
+  margin-top: 4px;
+  font-size: 0.85rem;
 }
 
 .stop-filters label {
@@ -469,10 +467,19 @@ body {
   display: flex;
   gap: 10px;
   margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.filter-left-col {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 10px;
 }
 
 .filter-half {
   flex: 1;
+  min-width: 140px;
 }
 
 .filter-half label {
@@ -487,7 +494,6 @@ body {
   border: none;
   margin-top: 4px;
 }
-
 
 .footer {
   width: 100%;

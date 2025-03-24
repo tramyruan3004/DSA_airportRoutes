@@ -10,6 +10,11 @@ CORS(app)
 with open('dataset/airline_routes.json') as f:
     data = json.load(f)
 
+with open('dataset/currency.json') as f:
+    currency_data = json.load(f)
+currency_rates = currency_data.get("rates", {})
+
+
 graph = dataParser.AirportGraph(data)
 
 def format_routes(routes):
@@ -54,6 +59,15 @@ def get_routes():
             routes = algorithms.find_one_way_flights(graph, departure, destination, stops, cabin)
 
     formatted_routes = format_routes(routes)
+    selected_currency = request.args.get('currency', 'SGD')
+    rate_info = currency_rates.get(selected_currency, {"rate": 1.0, "symbol": selected_currency})
+    conversion_rate = rate_info.get("rate", 1.0)
+
+    for r in formatted_routes:
+        r["price"] = round(r["price"] * conversion_rate, 2)
+        r["currency"] = selected_currency
+        r["symbol"] = rate_info.get("symbol", selected_currency)
+
     print("Found Routes →", formatted_routes[:10])
 
     return jsonify(formatted_routes)

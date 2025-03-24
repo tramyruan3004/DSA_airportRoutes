@@ -13,6 +13,8 @@ const App = () => {
   const [middle, setMiddle] = useState(null);
   const [searchStarted, setSearchStarted] = useState(false);
   const [cabin, setCabin] = useState('Economy');
+  const [currency, setCurrency] = useState('SGD');
+  const [currencyRates, setCurrencyRates] = useState({});
   const [routeType, setRouteType] = useState('cheapest');
   const [stopFilters, setStopFilters] = useState({ direct: true, oneStop: true, twoStop: true });
   const [foundRoutes, setFoundRoutes] = useState([]);
@@ -22,7 +24,7 @@ const App = () => {
 
   const fetchRoutes = async () => {
     if (!departure || !destination) return;
-    let query = `departure=${departure.value}&destination=${destination.value}&stops=2&cabin=${cabin}&tripType=${tripType}&routeType=${routeType}&mode=${mode}`;
+    let query = `departure=${departure.value}&destination=${destination.value}&stops=2&cabin=${cabin}&tripType=${tripType}&routeType=${routeType}&mode=${mode}&currency=${currency}`;
     if (tripType === 'multicity' && middle) {
       query += `&middle=${middle.value}`;
     }
@@ -54,6 +56,20 @@ const App = () => {
     };
     fetchAirports();
   }, []);
+
+  useEffect(() => {
+    const fetchCurrencyData = async () => {
+      try {
+        const res = await fetch('/currency.json');
+        const data = await res.json();
+        setCurrencyRates(data.rates || {});
+      } catch (err) {
+        console.error('Error loading currency data:', err);
+      }
+    };
+    fetchCurrencyData();
+  }, []);
+
 
   const handleStopFilterChange = (type) => {
     setStopFilters(prev => ({ ...prev, [type]: !prev[type] }));
@@ -176,14 +192,24 @@ const App = () => {
                   </div>
                 </div>
                 <div className="filters-row">
-                  <div className="filter-half">
-                    <label>Cabin Type:</label>
-                    <select className="mini-input" value={cabin} onChange={(e) => setCabin(e.target.value)}>
-                      <option>Economy</option>
-                      <option>Premium Economy</option>
-                      <option>Business</option>
-                      <option>First</option>
-                    </select>
+                  <div className="filter-left-col">
+                    <div className="filter-half">
+                      <label>Cabin Type:</label>
+                      <select className="mini-input" value={cabin} onChange={(e) => setCabin(e.target.value)}>
+                        <option>Economy</option>
+                        <option>Premium Economy</option>
+                        <option>Business</option>
+                        <option>First</option>
+                      </select>
+                    </div>
+                    <div className="filter-half">
+                      <label>Currency:</label>
+                      <select className="mini-input" value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                        {Object.entries(currencyRates).map(([code, val]) => (
+                          <option key={code} value={code}>{val.name} ({code})</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                   <div className="filter-half">
                     <label>Stops:</label>
@@ -208,7 +234,7 @@ const App = () => {
                         <p><strong>Distance:</strong> {route.distance} km</p>
                         <p><strong>Duration:</strong> {Math.floor(route.duration / 60)}h {route.duration % 60}m</p>
                         <div className="price-btn-row">
-                          <p><strong>Price:</strong> ${route.price}</p>
+                          <p><strong>Price:</strong> {route.symbol || '$'}{route.price?.toFixed(2)}</p>
                           <button className="more-btn" onClick={() => handleRouteSelection(route)}>Show routes →</button>
                         </div>
                       </div>
