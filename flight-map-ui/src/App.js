@@ -115,7 +115,7 @@ const App = () => {
     if (searchStarted) {
       fetchRoutes();
     }
-  }, [routeType, cabin]);
+  }, [routeType, cabin, currency]); // <-- Added currency here
 
   return (
     <div className="app-container">
