@@ -38,6 +38,34 @@ def assign_neighbour(graph, departure_code, destination_code, cabin):
 def sort_routes_by_stops_and_price(routes):
     return sorted(routes, key=lambda r: (len(r[0]) - 2, r[3]))
 
+def quicksort_routes_by_stops_and_price(routes):
+    if len(routes) <= 1:
+        return routes
+    
+    pivot = routes[len(routes) // 2]
+    pivot_stops = len(pivot[0]) - 2
+    pivot_price = pivot[3]
+    
+    less = [route for route in routes if (len(route[0]) - 2, route[3]) < (pivot_stops, pivot_price)]
+    equal = [route for route in routes if (len(route[0]) - 2, route[3]) == (pivot_stops, pivot_price)]
+    greater = [route for route in routes if (len(route[0]) - 2, route[3]) > (pivot_stops, pivot_price)]
+    
+    return quicksort_routes_by_stops_and_price(less) + equal + quicksort_routes_by_stops_and_price(greater)
+
+def quicksort_routes_by_stops_and_distance(routes):
+    if len(routes) <= 1:
+        return routes
+    
+    pivot = routes[len(routes) // 2]
+    pivot_stops = len(pivot[0]) - 2
+    pivot_dist = pivot[1]
+    
+    less = [route for route in routes if (len(route[0]) - 2, route[1]) < (pivot_stops, pivot_dist)]
+    equal = [route for route in routes if (len(route[0]) - 2, route[1]) == (pivot_stops, pivot_dist)]
+    greater = [route for route in routes if (len(route[0]) - 2, route[1]) > (pivot_stops, pivot_dist)]
+    
+    return quicksort_routes_by_stops_and_distance(less) + equal + quicksort_routes_by_stops_and_distance(greater)
+
 def find_one_way_flights(graph, departure, destination, stops=0, cabin="Economy"):
     found_routes = []
     queue = deque()
@@ -64,7 +92,8 @@ def find_one_way_flights(graph, departure, destination, stops=0, cabin="Economy"
     if not found_routes:
         print("No direct flights available, looking into neighbouring airports.")
         found_routes = assign_neighbour(graph, departure, destination, cabin)
-    found_routes = sort_routes_by_stops_and_price(found_routes)
+    found_routes = quicksort_routes_by_stops_and_price(found_routes)
+    # found_routes = sort_routes_by_stops_and_price(found_routes)
     return found_routes
 
 def find_one_way_flights_dijkstra(graph, departure, destination, stops=0, cabin="Economy"):
@@ -146,7 +175,8 @@ def find_optimal_flights_complete(graph, departure, destination, max_stops=2, ca
     if max_stops == 0 and found_direct:
         return [route for route in found_routes if len(route[0]) == 2]
 
-    found_routes.sort(key=lambda x: (len(x[0])-2, x[1]))
+    found_routes = quicksort_routes_by_stops_and_distance(found_routes)
+    # found_routes.sort(key=lambda x: (len(x[0])-2, x[1]))
     return found_routes
 
 def find_multi_city_flights(graph, departure, middle, destination, max_stops = 1, filter_type='cheapest', cabin='Economy'):
@@ -162,5 +192,6 @@ def find_multi_city_flights(graph, departure, middle, destination, max_stops = 1
             total_cost = round(r1[3] + r2[3], 2)
             label = "Alternative via Nearby Airport" if (len(r1) >= 6 and r1[5] == "Alternative via Nearby Airport") or (len(r2) >= 6 and r2[5] == "Alternative via Nearby Airport") else "Standard Route"
             all_routes.append((full_path, total_dist, total_time, total_cost, cabin, label))
-    all_routes = sort_routes_by_stops_and_price(all_routes)
+    all_routes = quicksort_routes_by_stops_and_price(all_routes)    
+    # all_routes = sort_routes_by_stops_and_price(all_routes)
     return all_routes
