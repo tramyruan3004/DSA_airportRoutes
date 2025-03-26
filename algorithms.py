@@ -44,8 +44,6 @@ def assign_neighbour(graph, departure_code, destination_code, cabin):
         dist_to_destination = round(twoAirportDist(neighbour_lat, neighbour_lon, dest_lat, dest_lon), 2)
 
         if neighbour_info["country"] == destination_country:
-            print(f"Neighbour: {neighbour} → {destination_code}, Distance: {dist_to_destination} km")  # 🔍 Debug print
-
             neighbours.append((
                 [departure_code, neighbour],
                 distance,
