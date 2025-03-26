@@ -49,7 +49,7 @@ def get_routes():
     print("Received Request →", request.args)
     if mode == 'quick':
         if trip_type == 'multicity' and middle:
-            routes = algorithms.find_multi_city_flights(graph, departure, middle, destination, 1, route_type, cabin)
+            routes = algorithms.find_multi_city_flights_aStarSearch(graph, departure, middle, destination, 1, route_type, cabin)
         else:
             routes = algorithms.find_one_way_flights_dijkstra(graph, departure, destination, stops, cabin)
     else:

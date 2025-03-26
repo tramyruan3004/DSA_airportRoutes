@@ -1,6 +1,31 @@
+import time
+import math
 from collections import deque, defaultdict
 import heapq 
-import math
+import json
+import dataParser
+
+
+# Load airport data
+with open("dataset/airline_routes.json", "r") as file:
+    airport_data = json.load(file)
+
+# Initialize AirportGraph
+airport_graph = dataParser.AirportGraph(airport_data)
+
+# Parse airport coordinates
+airport_coords = {
+    iata: (float(info["latitude"]) if info.get("latitude") else None,
+           float(info["longitude"]) if info.get("longitude") else None)
+    for iata, info in airport_data.items()
+}
+
+# Filter out invalid coords
+valid_airport_coords = {
+    iata: (lat, lon)
+    for iata, (lat, lon) in airport_coords.items()
+    if lat is not None and lon is not None
+}
 
 CABIN_MULTIPLIERS = {
     "Economy": 1.0,
@@ -197,8 +222,9 @@ def find_multi_city_flights(graph, departure, middle, destination, max_stops = 1
     # all_routes = sort_routes_by_stops_and_price(all_routes)
     return all_routes
 
+
 def twoAirportDist(lat1, lon1, lat2, lon2):
-    R = 6378  
+    R = 6378  # km
     phi1, phi2 = math.radians(lat1), math.radians(lat2)
     dphi = phi2 - phi1
     dlambda = math.radians(lon2 - lon1)
@@ -261,3 +287,11 @@ def find_multi_city_flights_aStarSearch(graph, departure, middle, destination, m
 
     routes = sort_routes_by_stops_and_price(routes)
     return routes
+
+
+find_mRoutes_bfs = find_multi_city_flights(airport_graph, "HAN", "ICN", "SIN")
+print(find_mRoutes_bfs[:20])
+print("===================================================================================")
+find_mRoutes_aStar = find_multi_city_flights_aStarSearch(airport_graph, "HAN", "ICN", "SIN")
+print(find_mRoutes_aStar[:20])
+
