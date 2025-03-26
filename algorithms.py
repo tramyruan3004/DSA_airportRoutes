@@ -25,16 +25,40 @@ def assign_neighbour(graph, departure_code, destination_code, cabin):
     routes = graph.get_routes(departure_code)
     if not routes:
         return neighbours
+
     destination_country = graph.airport_info[destination_code]["country"]
+    dest_info = graph.airport_info[destination_code]
+    dest_lat = float(dest_info['latitude'])
+    dest_lon = float(dest_info['longitude'])
+
     for route in routes:
         neighbour = route["destination"]
         neighbour_info = graph.airport_info[neighbour]
         distance = route["km"]
         time = route["min"]
         price = round(distance * 0.5, 2)
+
+        # Calculate distance from neighbour airport to final destination airport
+        neighbour_lat = float(neighbour_info["latitude"])
+        neighbour_lon = float(neighbour_info["longitude"])
+        dist_to_destination = round(twoAirportDist(neighbour_lat, neighbour_lon, dest_lat, dest_lon), 2)
+
         if neighbour_info["country"] == destination_country:
-            neighbours.append(([departure_code, neighbour], distance, time, price, cabin, "Alternative via Nearby Airport"))
+            print(f"Neighbour: {neighbour} → {destination_code}, Distance: {dist_to_destination} km")  # 🔍 Debug print
+
+            neighbours.append((
+                [departure_code, neighbour],
+                distance,
+                time,
+                price,
+                cabin,
+                "Alternative via Nearby Airport",
+                dist_to_destination
+            ))
+
+    print("Returning neighbours with extra distances:", neighbours)
     return neighbours
+
 
 def sort_routes_by_stops_and_price(routes):
     return sorted(routes, key=lambda r: (len(r[0]) - 2, r[3]))
@@ -193,7 +217,7 @@ def find_multi_city_flights(graph, departure, middle, destination, max_stops = 1
             total_cost = round(r1[3] + r2[3], 2)
             label = "Alternative via Nearby Airport" if (len(r1) >= 6 and r1[5] == "Alternative via Nearby Airport") or (len(r2) >= 6 and r2[5] == "Alternative via Nearby Airport") else "Standard Route"
             all_routes.append((full_path, total_dist, total_time, total_cost, cabin, label))
-    all_routes = quicksort_routes_by_stops_and_price(all_routes)    
+    all_routes = quicksort_routes_by_stops_and_price(all_routes)
     # all_routes = sort_routes_by_stops_and_price(all_routes)
     return all_routes
 

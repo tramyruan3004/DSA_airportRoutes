@@ -234,9 +234,11 @@ const App = () => {
                         <p><strong>Distance:</strong> {route.distance} km</p>
                         <p><strong>Duration:</strong> {Math.floor(route.duration / 60)}h {route.duration % 60}m</p>
                         <div className="price-btn-row">
-                          <p><strong>Price:</strong> {route.symbol || '$'}{route.price?.toFixed(2)}</p>
-                          <button className="more-btn" onClick={() => handleRouteSelection(route)}>Show routes →</button>
+                           <p><strong>Price:</strong> {route.symbol || '$'}{route.price?.toFixed(2)}</p>
+                             <button className="more-btn" onClick={() => handleRouteSelection(route)}>Show routes →</button>
                         </div>
+                        {route.distance_to_destination !== undefined && (
+                        <p><strong>Distance from {route.path[1]} to {destination?.value}:</strong> {route.distance_to_destination} km</p>)}
                       </div>
                     </div>
                   ))

@@ -23,15 +23,20 @@ def format_routes(routes):
         if isinstance(r, dict):
             formatted.append(r)
         elif isinstance(r, (tuple, list)) and len(r) >= 6:
-            formatted.append({
+            route_data = {
                 "path": r[0],
                 "distance": r[1],
                 "duration": r[2],
                 "price": r[3],
                 "cabin": r[4],
                 "routeLabel": r[5] if r[5] == "Alternative via Nearby Airport" else ""
-            })
+            }
+
+            if len(r) >= 7:
+                route_data["distance_to_destination"] = r[6]
+            formatted.append(route_data)
     return formatted
+
 
 @app.route('/routes', methods=['GET'])
 def get_routes():
