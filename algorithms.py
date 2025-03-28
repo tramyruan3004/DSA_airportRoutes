@@ -220,12 +220,12 @@ def find_multi_city_flights(graph, departure, middle, destination, max_stops = 1
     return all_routes
 
 def twoAirportDist(lat1, lon1, lat2, lon2):
-    R = 6378  
-    phi1, phi2 = math.radians(lat1), math.radians(lat2)
-    dphi = phi2 - phi1
-    dlambda = math.radians(lon2 - lon1)
-    a = math.sin(dphi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dlambda/2)**2
-    return R * (2 * math.atan2(math.sqrt(a), math.sqrt(1 - a)))
+    ER = 6378  
+    start_node_lat, goal_node_lat = math.radians(lat1), math.radians(lat2)
+    diff_lat = goal_node_lat - start_node_lat
+    diff_lon = math.radians(lon2 - lon1)
+    a = math.sin(diff_lat/2)**2 + math.cos(start_node_lat)*math.cos(goal_node_lat)*math.sin(diff_lon/2)**2
+    return ER * (2 * math.atan2(math.sqrt(a), math.sqrt(1 - a)))
 
 def remainingDistH(graph, from_iata, to_iata):
     info1 = graph.get_airport_info(from_iata)
@@ -269,11 +269,11 @@ def astar_search(graph, start, goal, cabin="Economy", max_stops=1):
 
 def find_multi_city_flights_aStarSearch(graph, departure, middle, destination, max_stops=1, filter_type='cheapest', cabin='Economy'):
     routes = []
-    first_leg = astar_search(graph, departure, middle, cabin, max_stops)
-    for r1 in first_leg:
+    first_half = astar_search(graph, departure, middle, cabin, max_stops)
+    for r1 in first_half:
         mid = r1[0][-1]
-        second_leg = astar_search(graph, mid, destination, cabin, max_stops)
-        for r2 in second_leg:
+        second_half = astar_search(graph, mid, destination, cabin, max_stops)
+        for r2 in second_half:
             path = r1[0] + r2[0][1:]
             total_dist = r1[1] + r2[1]
             total_time = r1[2] + r2[2]

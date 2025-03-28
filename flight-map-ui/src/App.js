@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import Select from 'react-select';
 import MapComponent from './MapComponent';
@@ -22,7 +22,7 @@ const App = () => {
   const [selectedRoute, setSelectedRoute] = useState(null);
   const resultsPerPage = 30;
 
-  const fetchRoutes = async () => {
+  const fetchRoutes = useCallback(async () => {
     if (!departure || !destination) return;
     let query = `departure=${departure.value}&destination=${destination.value}&stops=2&cabin=${cabin}&tripType=${tripType}&routeType=${routeType}&mode=${mode}&currency=${currency}`;
     if (tripType === 'multicity' && middle) {
@@ -43,7 +43,7 @@ const App = () => {
       console.error('Error fetching routes:', err);
       setFoundRoutes([]);
     }
-  };
+  }, [departure, destination, cabin, tripType, routeType, mode, currency, middle]);
 
   const handleSearch = () => {
     fetchRoutes();
@@ -115,7 +115,7 @@ const App = () => {
     if (searchStarted) {
       fetchRoutes();
     }
-  }, [routeType, cabin, currency]); // <-- Added currency here
+  }, [routeType, cabin, currency, searchStarted, fetchRoutes]);
 
   return (
     <div className="app-container">
@@ -128,7 +128,7 @@ const App = () => {
 
             <div className="mode-navbar">
               <button className={mode === 'complete' ? 'nav-tab active' : 'nav-tab'} onClick={() => setMode('complete')}>Complete (BFS)</button>
-              <button className={mode === 'quick' ? 'nav-tab active' : 'nav-tab'} onClick={() => setMode('quick')}>Quick (Dijkstra)</button>
+              <button className={mode === 'quick' ? 'nav-tab active' : 'nav-tab'} onClick={() => setMode('quick')}>Quick (Dijkstra & A*)</button>
             </div>
 
             <div className="search-form-container">
