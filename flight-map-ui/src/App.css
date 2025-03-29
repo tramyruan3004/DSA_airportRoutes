@@ -21,7 +21,7 @@ body {
   justify-content: center;
   align-items: center;
   text-align: center;
-  padding-bottom: 60px; /* ✅ Spacing before footer */
+  padding-bottom: 60px; 
 }
 
 .hero-overlay {
@@ -155,7 +155,7 @@ body {
 .results-overlay {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.6); /* Darker overlay */
+  background: rgba(0, 0, 0, 0.6); 
   z-index: 1;
 }
 

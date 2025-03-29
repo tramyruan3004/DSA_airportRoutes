@@ -38,7 +38,6 @@ def assign_neighbour(graph, departure_code, destination_code, cabin):
         time = route["min"]
         price = round(distance * 0.5, 2)
 
-        # Calculate distance from neighbour airport to final destination airport
         neighbour_lat = float(neighbour_info["latitude"])
         neighbour_lon = float(neighbour_info["longitude"])
         dist_to_destination = round(twoAirportDist(neighbour_lat, neighbour_lon, dest_lat, dest_lon), 2)
@@ -57,7 +56,7 @@ def assign_neighbour(graph, departure_code, destination_code, cabin):
     print("Returning neighbours with extra distances:", neighbours)
     return neighbours
 
-
+# Sorting algorithms
 def sort_routes_by_stops_and_price(routes):
     return sorted(routes, key=lambda r: (len(r[0]) - 2, r[3]))
 
@@ -89,6 +88,7 @@ def quicksort_routes_by_stops_and_distance(routes):
     
     return quicksort_routes_by_stops_and_distance(less) + equal + quicksort_routes_by_stops_and_distance(greater)
 
+# one-way flight algorithms
 def find_one_way_flights(graph, departure, destination, stops=0, cabin="Economy"):
     found_routes = []
     queue = deque()
@@ -202,6 +202,7 @@ def find_optimal_flights_complete(graph, departure, destination, max_stops=2, ca
     found_routes.sort(key=lambda x: (len(x[0])-2, x[1]))
     return found_routes
 
+# multi-city flight algorithms
 def find_multi_city_flights(graph, departure, middle, destination, max_stops = 1, filter_type='cheapest', cabin='Economy'):
     all_routes = []
     first_half_routes = find_one_way_flights(graph, departure, middle, stops=max_stops)
@@ -219,6 +220,7 @@ def find_multi_city_flights(graph, departure, middle, destination, max_stops = 1
     all_routes = sort_routes_by_stops_and_price(all_routes)
     return all_routes
 
+# A* search
 def twoAirportDist(lat1, lon1, lat2, lon2):
     ER = 6378  
     start_node_lat, goal_node_lat = math.radians(lat1), math.radians(lat2)
